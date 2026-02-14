@@ -1,0 +1,10 @@
+{
+  "packages": ["nodejs@20", "pnpm@9"],
+  "env": {
+    "DEVBOX_COREPACK_ENABLED": "true",
+    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
+  },
+  "shell": {
+    "init_hook": "corepack enable && corepack prepare pnpm@9.15.3 --activate"
+  }
+}
