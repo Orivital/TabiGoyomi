@@ -5,13 +5,12 @@ import { TripDetailPage } from './pages/TripDetailPage'
 import { NewTripPage } from './pages/NewTripPage'
 import { NewEventPage } from './pages/NewEventPage'
 import { InvitePage } from './pages/InvitePage'
-import { DebugPage } from './pages/DebugPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/debug" element={<DebugPage />} />
         <Route
           path="/*"
           element={
@@ -25,6 +24,7 @@ function App() {
                   path="/trips/:tripId/days/:dayId/events/new"
                   element={<NewEventPage />}
                 />
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </AuthGuard>
           }
