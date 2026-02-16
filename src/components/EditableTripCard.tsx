@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { updateTrip } from '../lib/trips'
+import { useDateRangeAdjustment } from '../hooks/useDateRangeAdjustment'
 import type { Trip } from '../types/database'
 
 type Props = {
@@ -11,10 +12,21 @@ type Props = {
 export function EditableTripCard({ trip, onUpdated }: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(trip.title)
-  const [startDate, setStartDate] = useState(trip.start_date)
-  const [endDate, setEndDate] = useState(trip.end_date)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const {
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
+    handleStartDateChange,
+    handleEndDateChange,
+    getAdjustedEndDate,
+  } = useDateRangeAdjustment({
+    initialStart: trip.start_date,
+    initialEnd: trip.end_date,
+    onDateChange: () => setError(null),
+  })
 
   const handleEditClick = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -33,29 +45,18 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
     setError(null)
   }
 
-  const validateDates = (start?: string, end?: string) => {
-    const s = start ?? startDate
-    const e = end ?? endDate
-    if (s && e && new Date(s) > new Date(e)) {
-      setError('終了日は開始日以降にしてください')
-      return false
-    }
-    setError(null)
-    return true
-  }
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (!title.trim() || !startDate || !endDate) return
-    if (!validateDates()) return
     try {
       setIsSubmitting(true)
       setError(null)
+      const adjustedEndDate = getAdjustedEndDate()
       await updateTrip(trip.id, {
         title: title.trim(),
         start_date: startDate,
-        end_date: endDate,
+        end_date: adjustedEndDate,
       })
       onUpdated()
       setIsEditing(false)
@@ -89,11 +90,7 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
               id={`trip-start-${trip.id}`}
               type="date"
               value={startDate}
-              onChange={(e) => {
-                const newStart = e.target.value
-                setStartDate(newStart)
-                validateDates(newStart, endDate)
-              }}
+              onChange={(e) => handleStartDateChange(e.target.value)}
               required
             />
           </label>
@@ -104,11 +101,7 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
               type="date"
               value={endDate}
               min={startDate || undefined}
-              onChange={(e) => {
-                const newEnd = e.target.value
-                setEndDate(newEnd)
-                validateDates(startDate, newEnd)
-              }}
+              onChange={(e) => handleEndDateChange(e.target.value)}
               required
             />
           </label>
@@ -124,7 +117,7 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
             <button
               type="submit"
               className="btn-primary"
-              disabled={isSubmitting || !!error}
+              disabled={isSubmitting}
             >
               {isSubmitting ? '保存中...' : '保存'}
             </button>

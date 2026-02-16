@@ -1,26 +1,29 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { createTrip } from '../lib/trips'
+import { useDateRangeAdjustment } from '../hooks/useDateRangeAdjustment'
 
 export function NewTripPage() {
   const navigate = useNavigate()
   const [title, setTitle] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const {
+    startDate,
+    endDate,
+    handleStartDateChange,
+    handleEndDateChange,
+    getAdjustedEndDate,
+  } = useDateRangeAdjustment({ onDateChange: () => setError(null) })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim() || !startDate || !endDate) return
-    if (new Date(startDate) > new Date(endDate)) {
-      setError('終了日は開始日以降にしてください')
-      return
-    }
+    const adjustedEndDate = getAdjustedEndDate()
     try {
       setIsSubmitting(true)
       setError(null)
-      const trip = await createTrip({ title: title.trim(), start_date: startDate, end_date: endDate })
+      const trip = await createTrip({ title: title.trim(), start_date: startDate, end_date: adjustedEndDate })
       navigate(`/trips/${trip.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : '作成に失敗しました')
@@ -54,7 +57,7 @@ export function NewTripPage() {
             <input
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => handleStartDateChange(e.target.value)}
               required
             />
           </label>
@@ -63,7 +66,8 @@ export function NewTripPage() {
             <input
               type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(e) => handleEndDateChange(e.target.value)}
+              min={startDate || undefined}
               required
             />
           </label>
