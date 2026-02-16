@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { updateTrip } from '../lib/trips'
+import { updateTrip, deleteTrip } from '../lib/trips'
 import { useDateRangeAdjustment } from '../hooks/useDateRangeAdjustment'
 import type { Trip } from '../types/database'
 
@@ -43,6 +43,22 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
     e.stopPropagation()
     setIsEditing(false)
     setError(null)
+  }
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!window.confirm(`「${trip.title}」を削除しますか？この操作は取り消せません。`)) return
+    try {
+      setIsSubmitting(true)
+      setError(null)
+      await deleteTrip(trip.id)
+      onUpdated()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '削除に失敗しました')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -129,21 +145,34 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
 
   return (
     <div className="trip-card-wrapper">
+      {error && <p className="error trip-card-error">{error}</p>}
       <Link to={`/trips/${trip.id}`} className="trip-card">
         <h3>{trip.title}</h3>
         <p className="trip-dates">
           {trip.start_date} 〜 {trip.end_date}
         </p>
       </Link>
-      <button
-        type="button"
-        className="trip-card-edit-btn"
-        onClick={handleEditClick}
-        title="編集"
-        aria-label="編集"
-      >
-        編集
-      </button>
+      <div className="trip-card-actions">
+        <button
+          type="button"
+          className="trip-card-delete-btn"
+          onClick={handleDelete}
+          title="削除"
+          aria-label="削除"
+          disabled={isSubmitting}
+        >
+          削除
+        </button>
+        <button
+          type="button"
+          className="trip-card-edit-btn"
+          onClick={handleEditClick}
+          title="編集"
+          aria-label="編集"
+        >
+          編集
+        </button>
+      </div>
     </div>
   )
 }

@@ -222,10 +222,16 @@ body {
   position: relative;
 }
 
-.trip-card-edit-btn {
+.trip-card-actions {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.trip-card-edit-btn,
+.trip-card-delete-btn {
   padding: 0.25rem 0.5rem;
   font-size: 0.875rem;
   background: transparent;
@@ -239,6 +245,21 @@ body {
 .trip-card-edit-btn:hover {
   color: var(--color-primary);
   background: rgba(0, 0, 0, 0.05);
+}
+
+.trip-card-delete-btn:hover:not(:disabled) {
+  color: var(--color-error);
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
+}
+
+.trip-card-delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.trip-card-error {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
 }
 
 .trip-card--editing {
