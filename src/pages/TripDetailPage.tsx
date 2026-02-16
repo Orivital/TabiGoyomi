@@ -33,18 +33,14 @@ export function TripDetailPage() {
 
       <main className="main">
         <p className="trip-dates">
-          {trip.start_date} 〜 {trip.end_date}
+          {trip.start_date.replace(/-/g, '/')} 〜 {trip.end_date.replace(/-/g, '/')}
         </p>
 
         <div className="trip-days">
           {tripDays.map((day) => (
             <section key={day.id} className="trip-day">
               <h3 className="day-date">
-                {new Date(day.day_date + 'T12:00:00').toLocaleDateString('ja-JP', {
-                  month: 'long',
-                  day: 'numeric',
-                  weekday: 'short',
-                })}
+                {day.day_date.replace(/-/g, '/')}
               </h3>
               {day.memo && <p className="day-memo">{day.memo}</p>}
               <ul className="event-list">

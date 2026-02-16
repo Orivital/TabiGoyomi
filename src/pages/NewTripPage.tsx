@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { createTrip } from '../lib/trips'
+import { DatePickerField } from '../components/DatePickerField'
 import { useDateRangeAdjustment } from '../hooks/useDateRangeAdjustment'
 
 export function NewTripPage() {
@@ -54,20 +55,20 @@ export function NewTripPage() {
           </label>
           <label>
             開始日
-            <input
-              type="date"
+            <DatePickerField
               value={startDate}
-              onChange={(e) => handleStartDateChange(e.target.value)}
+              onChange={handleStartDateChange}
+              placeholder="YYYY/MM/DD"
               required
             />
           </label>
           <label>
             終了日
-            <input
-              type="date"
+            <DatePickerField
               value={endDate}
-              onChange={(e) => handleEndDateChange(e.target.value)}
-              min={startDate || undefined}
+              onChange={handleEndDateChange}
+              minDate={startDate || undefined}
+              placeholder="YYYY/MM/DD"
               required
             />
           </label>

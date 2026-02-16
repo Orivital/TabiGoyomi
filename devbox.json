@@ -5,6 +5,11 @@
     "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
   },
   "shell": {
-    "init_hook": "corepack enable && corepack prepare pnpm@9.15.3 --activate"
+    "init_hook": "corepack enable && corepack prepare pnpm@9.15.3 --activate",
+    "scripts": {
+      "dev": "pnpm dev",
+      "build": "pnpm build",
+      "install": "pnpm install"
+    }
   }
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { updateTrip, deleteTrip } from '../lib/trips'
+import { DatePickerField } from './DatePickerField'
 import { useDateRangeAdjustment } from '../hooks/useDateRangeAdjustment'
 import type { Trip } from '../types/database'
 
@@ -102,22 +103,22 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
           </label>
           <label htmlFor={`trip-start-${trip.id}`}>
             開始日
-            <input
+            <DatePickerField
               id={`trip-start-${trip.id}`}
-              type="date"
               value={startDate}
-              onChange={(e) => handleStartDateChange(e.target.value)}
+              onChange={handleStartDateChange}
+              placeholder="YYYY/MM/DD"
               required
             />
           </label>
           <label htmlFor={`trip-end-${trip.id}`}>
             終了日
-            <input
+            <DatePickerField
               id={`trip-end-${trip.id}`}
-              type="date"
               value={endDate}
-              min={startDate || undefined}
-              onChange={(e) => handleEndDateChange(e.target.value)}
+              onChange={handleEndDateChange}
+              minDate={startDate || undefined}
+              placeholder="YYYY/MM/DD"
               required
             />
           </label>
@@ -149,7 +150,7 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
       <Link to={`/trips/${trip.id}`} className="trip-card">
         <h3>{trip.title}</h3>
         <p className="trip-dates">
-          {trip.start_date} 〜 {trip.end_date}
+          {trip.start_date.replace(/-/g, '/')} 〜 {trip.end_date.replace(/-/g, '/')}
         </p>
       </Link>
       <div className="trip-card-actions">
