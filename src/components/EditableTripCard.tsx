@@ -33,14 +33,22 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
     setError(null)
   }
 
+  const validateDates = (start?: string, end?: string) => {
+    const s = start ?? startDate
+    const e = end ?? endDate
+    if (s && e && new Date(s) > new Date(e)) {
+      setError('終了日は開始日以降にしてください')
+      return false
+    }
+    setError(null)
+    return true
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (!title.trim() || !startDate || !endDate) return
-    if (new Date(startDate) > new Date(endDate)) {
-      setError('終了日は開始日以降にしてください')
-      return
-    }
+    if (!validateDates()) return
     try {
       setIsSubmitting(true)
       setError(null)
@@ -81,7 +89,11 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
               id={`trip-start-${trip.id}`}
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) => {
+                const newStart = e.target.value
+                setStartDate(newStart)
+                validateDates(newStart, endDate)
+              }}
               required
             />
           </label>
@@ -91,7 +103,12 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
               id={`trip-end-${trip.id}`}
               type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              min={startDate || undefined}
+              onChange={(e) => {
+                const newEnd = e.target.value
+                setEndDate(newEnd)
+                validateDates(startDate, newEnd)
+              }}
               required
             />
           </label>
@@ -107,7 +124,7 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
             <button
               type="submit"
               className="btn-primary"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !!error}
             >
               {isSubmitting ? '保存中...' : '保存'}
             </button>
