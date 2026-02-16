@@ -218,6 +218,72 @@ body {
   color: var(--color-text-muted);
 }
 
+.trip-card-wrapper {
+  position: relative;
+}
+
+.trip-card-edit-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+}
+
+.trip-card-edit-btn:hover {
+  color: var(--color-primary);
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.trip-card--editing {
+  padding: 1rem 1.25rem;
+  background: white;
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+}
+
+.trip-card-edit-form label {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.trip-card-edit-form input {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.trip-card-edit-form .error {
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.trip-card-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.trip-card-edit-actions .btn-primary {
+  flex: 1;
+}
+
+.trip-card-edit-actions .btn-secondary {
+  flex: 1;
+}
+
 .empty {
   text-align: center;
   color: var(--color-text-muted);

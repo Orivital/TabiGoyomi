@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useTrips } from '../hooks/useTrips'
 import { useAuth } from '../hooks/useAuth'
+import { EditableTripCard } from '../components/EditableTripCard'
 
 export function TripListPage() {
-  const { trips, isLoading, error } = useTrips()
+  const { trips, isLoading, error, refetch } = useTrips()
   const { signOut } = useAuth()
 
   if (isLoading) {
@@ -50,12 +51,7 @@ export function TripListPage() {
           <ul className="trip-list">
             {trips.map((trip) => (
               <li key={trip.id}>
-                <Link to={`/trips/${trip.id}`} className="trip-card">
-                  <h3>{trip.title}</h3>
-                  <p className="trip-dates">
-                    {trip.start_date} 〜 {trip.end_date}
-                  </p>
-                </Link>
+                <EditableTripCard trip={trip} onUpdated={refetch} />
               </li>
             ))}
           </ul>
