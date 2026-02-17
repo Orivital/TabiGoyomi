@@ -1,9 +1,43 @@
+import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useTripDetail } from '../hooks/useTripDetail'
+
+type LocationState = {
+  dayDate: string
+  isGenerated: boolean
+}
 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { trip, tripDays, isLoading, error } = useTripDetail(id ?? null)
+
+  // 期間内の日付を生成し、trip_daysとマージする処理をuseMemoで最適化
+  const daysInRange = useMemo(() => {
+    if (!trip) return []
+
+    const startDate = new Date(trip.start_date)
+    const endDate = new Date(trip.end_date)
+    const dateRange: string[] = []
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      dateRange.push(d.toISOString().slice(0, 10))
+    }
+
+    return dateRange.map((dateStr) => {
+      const day = tripDays.find((d) => d.day_date === dateStr)
+      return day
+        ? { ...day, isGenerated: false }
+        : {
+            id: `generated-${dateStr}`,
+            trip_id: trip.id,
+            day_date: dateStr,
+            memo: null,
+            created_at: '',
+            updated_at: '',
+            events: [],
+            isGenerated: true,
+          }
+    })
+  }, [trip, tripDays])
 
   if (isLoading) {
     return (
@@ -37,7 +71,7 @@ export function TripDetailPage() {
         </p>
 
         <div className="trip-days">
-          {tripDays.map((day, index) => (
+          {daysInRange.map((day, index) => (
             <section key={day.id} className="trip-day">
               <h3 className="day-date">
                 {index + 1}日目 ({day.day_date.replace(/-/g, '/')})
@@ -66,6 +100,7 @@ export function TripDetailPage() {
               <Link
                 to={`/trips/${trip.id}/days/${day.id}/events/new`}
                 className="btn-add-event"
+                state={{ dayDate: day.day_date, isGenerated: day.isGenerated } as LocationState}
               >
                 + 予定を追加
               </Link>
