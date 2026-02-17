@@ -1,0 +1,12 @@
+---
+description: Use devbox shell for terminal commands
+alwaysApply: true
+---
+
+# Devbox Environment
+
+When running terminal commands in this project, use devbox:
+
+- **One-off commands**: `devbox run -- <command>`
+- **Scripts**: Use `devbox run <script>` (e.g. `devbox run dev`, `devbox run build`, `devbox run install`)
+- **Interactive shell**: For multiple sequential commands, start with `devbox shell` and run commands within that session
