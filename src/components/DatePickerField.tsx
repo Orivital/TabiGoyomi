@@ -43,7 +43,7 @@ export function DatePickerField({
   value,
   onChange,
   minDate,
-  placeholder = 'YYYY/MM/DD',
+  placeholder = 'YYYY/MM/DD (曜日)',
   required,
 }: Props) {
   const selected = toDate(value)
@@ -135,7 +135,7 @@ export function DatePickerField({
         if (d) onChange(toYMD(d))
         else onChange('')
       }}
-      dateFormat="yyyy/MM/dd"
+      dateFormat="yyyy/MM/dd (E)"
       dateFormatCalendar="yyyy年 LLLL"
       locale="ja"
       minDate={min}

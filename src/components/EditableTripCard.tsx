@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { updateTrip, deleteTrip } from '../lib/trips'
+import { formatDateWithWeekday } from '../lib/dateFormat'
 import { DatePickerField } from './DatePickerField'
 import { useDateRangeAdjustment } from '../hooks/useDateRangeAdjustment'
 import type { Trip } from '../types/database'
@@ -150,7 +151,7 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
       <Link to={`/trips/${trip.id}`} className="trip-card">
         <h3>{trip.title}</h3>
         <p className="trip-dates">
-          {trip.start_date.replace(/-/g, '/')} 〜 {trip.end_date.replace(/-/g, '/')}
+          {formatDateWithWeekday(trip.start_date)} 〜 {formatDateWithWeekday(trip.end_date)}
         </p>
       </Link>
       <div className="trip-card-actions">

@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { formatDateWithWeekday } from '../lib/dateFormat'
 import { useTripDetail } from '../hooks/useTripDetail'
 
 type LocationState = {
@@ -67,14 +68,14 @@ export function TripDetailPage() {
 
       <main className="main">
         <p className="trip-dates">
-          {trip.start_date.replace(/-/g, '/')} 〜 {trip.end_date.replace(/-/g, '/')}
+          {formatDateWithWeekday(trip.start_date)} 〜 {formatDateWithWeekday(trip.end_date)}
         </p>
 
         <div className="trip-days">
           {daysInRange.map((day, index) => (
             <section key={day.id} className="trip-day">
               <h3 className="day-date">
-                {index + 1}日目 ({day.day_date.replace(/-/g, '/')})
+                {index + 1}日目 ({formatDateWithWeekday(day.day_date)})
               </h3>
               {day.memo && <p className="day-memo">{day.memo}</p>}
               <ul className="event-list">
