@@ -18,3 +18,26 @@ export function formatDateWithWeekday(ymd: string): string {
   
   return `${y}/${m}/${d} (${weekday})`
 }
+
+/**
+ * HH:mm:ss 形式の時間文字列から秒を削除して HH:mm 形式に変換
+ * @param time HH:mm:ss または HH:mm 形式の時間文字列
+ * @returns HH:mm 形式の文字列
+ * @throws {Error} 不正な形式の時間文字列が渡された場合
+ */
+export function formatTimeWithoutSeconds(time: string | null): string {
+  if (!time) return '-'
+  
+  // HH:mm:ss 形式の場合、秒を削除
+  if (time.match(/^\d{2}:\d{2}:\d{2}$/)) {
+    return time.slice(0, 5) // 最初の5文字（HH:mm）を取得
+  }
+  
+  // 既に HH:mm 形式の場合はそのまま返す
+  if (time.match(/^\d{2}:\d{2}$/)) {
+    return time
+  }
+  
+  // 不正な形式の場合はエラーを投げる
+  throw new Error(`不正な時間形式です: "${time}". HH:mm:ss または HH:mm 形式を期待しています。`)
+}

@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { formatDateWithWeekday } from '../lib/dateFormat'
+import { formatDateWithWeekday, formatTimeWithoutSeconds } from '../lib/dateFormat'
 import { useTripDetail } from '../hooks/useTripDetail'
 
 type LocationState = {
@@ -87,8 +87,8 @@ export function TripDetailPage() {
                     >
                       <div className="event-time">
                         {event.start_time && event.end_time
-                          ? `${event.start_time} - ${event.end_time}`
-                          : event.start_time ?? '-'}
+                          ? `${formatTimeWithoutSeconds(event.start_time)} - ${formatTimeWithoutSeconds(event.end_time)}`
+                          : formatTimeWithoutSeconds(event.start_time)}
                       </div>
                       <div className="event-content">
                         <strong>{event.title}</strong>
