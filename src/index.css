@@ -467,9 +467,10 @@ body {
 }
 
 .event-time {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  margin-bottom: 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 0.375rem;
 }
 
 .event-content strong {
