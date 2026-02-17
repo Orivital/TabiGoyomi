@@ -37,10 +37,10 @@ export function TripDetailPage() {
         </p>
 
         <div className="trip-days">
-          {tripDays.map((day) => (
+          {tripDays.map((day, index) => (
             <section key={day.id} className="trip-day">
               <h3 className="day-date">
-                {day.day_date.replace(/-/g, '/')}
+                {index + 1}日目 ({day.day_date.replace(/-/g, '/')})
               </h3>
               {day.memo && <p className="day-memo">{day.memo}</p>}
               <ul className="event-list">
