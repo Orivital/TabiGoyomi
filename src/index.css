@@ -104,6 +104,25 @@ body {
   background: var(--color-border);
 }
 
+.btn-danger {
+  padding: 0.5rem 1rem;
+  background: var(--color-error);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-error) 85%, black);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .trip-list-header {
   display: flex;
   justify-content: space-between;
@@ -375,6 +394,26 @@ body {
   width: 100%;
 }
 
+.event-form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.event-form-actions button {
+  margin-top: 0;
+  width: auto;
+}
+
+.event-form-actions .btn-primary {
+  flex: 1;
+}
+
+.event-form-actions .btn-danger {
+  flex: 0 0 auto;
+  min-width: auto;
+}
+
 .trip-days {
   margin-top: 1.5rem;
 }
@@ -408,12 +447,23 @@ body {
 }
 
 .event-card {
-  padding: 0.75rem;
-  background: var(--color-bg);
-  border-radius: 8px;
   margin-bottom: 0.5rem;
   position: relative;
   z-index: 2;
+}
+
+.event-card-link {
+  display: block;
+  padding: 0.75rem;
+  background: var(--color-bg);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.event-card-link:hover {
+  background: var(--color-border);
 }
 
 .event-time {

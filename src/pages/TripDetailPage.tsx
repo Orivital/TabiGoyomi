@@ -80,20 +80,25 @@ export function TripDetailPage() {
               <ul className="event-list">
                 {day.events.map((event) => (
                   <li key={event.id} className="event-card">
-                    <div className="event-time">
-                      {event.start_time && event.end_time
-                        ? `${event.start_time} - ${event.end_time}`
-                        : event.start_time ?? '-'}
-                    </div>
-                    <div className="event-content">
-                      <strong>{event.title}</strong>
-                      {event.location && (
-                        <span className="event-location">📍 {event.location}</span>
-                      )}
-                      {event.description && (
-                        <p className="event-description">{event.description}</p>
-                      )}
-                    </div>
+                    <Link
+                      to={`/trips/${trip.id}/events/${event.id}/edit`}
+                      className="event-card-link"
+                    >
+                      <div className="event-time">
+                        {event.start_time && event.end_time
+                          ? `${event.start_time} - ${event.end_time}`
+                          : event.start_time ?? '-'}
+                      </div>
+                      <div className="event-content">
+                        <strong>{event.title}</strong>
+                        {event.location && (
+                          <span className="event-location">📍 {event.location}</span>
+                        )}
+                        {event.description && (
+                          <p className="event-description">{event.description}</p>
+                        )}
+                      </div>
+                    </Link>
                   </li>
                 ))}
               </ul>

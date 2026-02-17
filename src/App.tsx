@@ -4,6 +4,7 @@ import { TripListPage } from './pages/TripListPage'
 import { TripDetailPage } from './pages/TripDetailPage'
 import { NewTripPage } from './pages/NewTripPage'
 import { NewEventPage } from './pages/NewEventPage'
+import { EditEventPage } from './pages/EditEventPage'
 import { InvitePage } from './pages/InvitePage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
@@ -23,6 +24,10 @@ function App() {
                 <Route
                   path="/trips/:tripId/days/:dayId/events/new"
                   element={<NewEventPage />}
+                />
+                <Route
+                  path="/trips/:tripId/events/:eventId/edit"
+                  element={<EditEventPage />}
                 />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>

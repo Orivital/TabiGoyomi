@@ -44,6 +44,17 @@ export async function fetchTripEvents(tripDayId: string) {
   return data as TripEvent[]
 }
 
+export async function fetchTripEvent(id: string) {
+  const { data, error } = await supabase
+    .from('trip_events')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) throw error
+  return data as TripEvent
+}
+
 export async function createTrip(trip: {
   title: string
   start_date: string
