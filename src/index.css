@@ -283,6 +283,51 @@ body {
   cursor: not-allowed;
 }
 
+.trip-card-delete-confirm-label {
+  font-size: 0.8rem;
+  color: var(--color-error);
+  white-space: nowrap;
+}
+
+.trip-card-delete-confirm-btn,
+.trip-card-delete-cancel-btn {
+  padding: 0.15rem 0.4rem;
+  font-size: 0.8rem;
+  border: 1px solid;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.trip-card-delete-confirm-btn {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: white;
+}
+
+.trip-card-delete-confirm-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.trip-card-delete-confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.trip-card-delete-cancel-btn {
+  background: transparent;
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
+}
+
+.trip-card-delete-cancel-btn:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.trip-card-delete-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .trip-card-error {
   margin: 0 0 0.5rem;
   font-size: 0.875rem;

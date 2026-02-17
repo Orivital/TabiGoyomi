@@ -15,6 +15,7 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(trip.title)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const {
     startDate,
@@ -47,10 +48,15 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
     setError(null)
   }
 
-  const handleDelete = async (e: React.MouseEvent) => {
+  const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (!window.confirm(`「${trip.title}」を削除しますか？この操作は取り消せません。`)) return
+    setIsConfirmingDelete(true)
+  }
+
+  const handleDeleteConfirm = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     try {
       setIsSubmitting(true)
       setError(null)
@@ -60,7 +66,14 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
       setError(err instanceof Error ? err.message : '削除に失敗しました')
     } finally {
       setIsSubmitting(false)
+      setIsConfirmingDelete(false)
     }
+  }
+
+  const handleDeleteCancel = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsConfirmingDelete(false)
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -155,16 +168,42 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
         <div className="trip-card-title-row">
           <h3>{trip.title}</h3>
           <div className="trip-card-actions">
-            <button
-              type="button"
-              className="trip-card-delete-btn"
-              onClick={handleDelete}
-              title="削除"
-              aria-label="削除"
-              disabled={isSubmitting}
-            >
-              削除
-            </button>
+            {isConfirmingDelete ? (
+              <>
+                <span className="trip-card-delete-confirm-label">削除しますか？</span>
+                <button
+                  type="button"
+                  className="trip-card-delete-confirm-btn"
+                  onClick={handleDeleteConfirm}
+                  disabled={isSubmitting}
+                  title="削除を実行"
+                  aria-label="削除を実行"
+                >
+                  {isSubmitting ? '削除中...' : 'はい'}
+                </button>
+                <button
+                  type="button"
+                  className="trip-card-delete-cancel-btn"
+                  onClick={handleDeleteCancel}
+                  disabled={isSubmitting}
+                  title="キャンセル"
+                  aria-label="キャンセル"
+                >
+                  いいえ
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                className="trip-card-delete-btn"
+                onClick={handleDeleteClick}
+                title="削除"
+                aria-label="削除"
+                disabled={isSubmitting}
+              >
+                削除
+              </button>
+            )}
             <button
               type="button"
               className="trip-card-edit-btn"
