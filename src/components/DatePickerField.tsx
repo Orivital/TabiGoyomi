@@ -72,9 +72,32 @@ export function DatePickerField({
     }
   }, [])
 
+  /** react-datepickerのナビゲーションボタンの位置を修正（CSSで対応できない場合のフォールバック） */
+  const fixNavigationButtons = useCallback(() => {
+    // 現在のポッパー内のボタンのみを対象にする（複数インスタンス対応）
+    const popper = document.querySelector(POPPER_SELECTOR) as HTMLElement
+    if (!popper) return
+
+    const prevButton = popper.querySelector('.react-datepicker__navigation--previous') as HTMLElement
+    const nextButton = popper.querySelector('.react-datepicker__navigation--next') as HTMLElement
+    
+    if (prevButton) {
+      prevButton.style.left = '0.5rem'
+      prevButton.style.right = 'auto'
+      prevButton.style.transform = 'none'
+    }
+    
+    if (nextButton) {
+      nextButton.style.right = '0.5rem'
+      nextButton.style.left = 'auto'
+      nextButton.style.transform = 'none'
+    }
+  }, [])
+
   const handleCalendarOpen = useCallback(() => {
     setTimeout(() => {
       updatePopperPosition()
+      fixNavigationButtons()
     }, POSITION_UPDATE_DELAY_MS)
 
     const checkAndFixPosition = () => {
@@ -87,6 +110,7 @@ export function DatePickerField({
           updatePopperPosition()
         }
       }
+      fixNavigationButtons()
     }
 
     monitorIntervalRef.current = setInterval(() => {
@@ -95,7 +119,7 @@ export function DatePickerField({
         checkAndFixPosition()
       }
     }, MONITOR_INTERVAL_MS)
-  }, [updatePopperPosition])
+  }, [updatePopperPosition, fixNavigationButtons])
 
   const handleCalendarClose = useCallback(() => {
     fixedPositionRef.current = null
@@ -109,9 +133,10 @@ export function DatePickerField({
     if (fixedPositionRef.current) {
       setTimeout(() => {
         updatePopperPosition()
+        fixNavigationButtons()
       }, POSITION_UPDATE_DELAY_MS)
     }
-  }, [updatePopperPosition])
+  }, [updatePopperPosition, fixNavigationButtons])
 
   useEffect(() => {
     return () => {
