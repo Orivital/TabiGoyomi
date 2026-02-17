@@ -149,32 +149,34 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
     <div className="trip-card-wrapper">
       {error && <p className="error trip-card-error">{error}</p>}
       <Link to={`/trips/${trip.id}`} className="trip-card">
-        <h3>{trip.title}</h3>
         <p className="trip-dates">
           {formatDateWithWeekday(trip.start_date)} 〜 {formatDateWithWeekday(trip.end_date)}
         </p>
+        <div className="trip-card-title-row">
+          <h3>{trip.title}</h3>
+          <div className="trip-card-actions">
+            <button
+              type="button"
+              className="trip-card-delete-btn"
+              onClick={handleDelete}
+              title="削除"
+              aria-label="削除"
+              disabled={isSubmitting}
+            >
+              削除
+            </button>
+            <button
+              type="button"
+              className="trip-card-edit-btn"
+              onClick={handleEditClick}
+              title="編集"
+              aria-label="編集"
+            >
+              編集
+            </button>
+          </div>
+        </div>
       </Link>
-      <div className="trip-card-actions">
-        <button
-          type="button"
-          className="trip-card-delete-btn"
-          onClick={handleDelete}
-          title="削除"
-          aria-label="削除"
-          disabled={isSubmitting}
-        >
-          削除
-        </button>
-        <button
-          type="button"
-          className="trip-card-edit-btn"
-          onClick={handleEditClick}
-          title="編集"
-          aria-label="編集"
-        >
-          編集
-        </button>
-      </div>
     </div>
   )
 }

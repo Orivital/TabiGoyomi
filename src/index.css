@@ -226,16 +226,24 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.trip-card h3 {
-  margin: 0 0 0.25rem;
-  font-size: 1.1rem;
-}
-
 .trip-dates {
-  margin: 0;
+  margin: 0 0 0.5rem;
   font-size: 0.875rem;
   color: var(--color-text-muted);
   text-align: center;
+}
+
+.trip-card-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.trip-card h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  flex: 1;
 }
 
 .trip-card-wrapper {
@@ -243,11 +251,9 @@ body {
 }
 
 .trip-card-actions {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
   display: flex;
   gap: 0.25rem;
+  flex-shrink: 0;
 }
 
 .trip-card-edit-btn,
