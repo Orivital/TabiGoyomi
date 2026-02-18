@@ -44,19 +44,30 @@ body {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  position: relative;
 }
 
 .header h1 {
   font-size: 1.5rem;
   font-weight: 600;
   margin: 0;
-  flex: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  max-width: calc(100% - 8rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .back-link {
   color: var(--color-primary);
   text-decoration: none;
   font-size: 0.9rem;
+  flex-shrink: 0;
+  z-index: 1;
+  position: relative;
 }
 
 .back-link:hover {
