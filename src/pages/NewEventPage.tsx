@@ -16,6 +16,7 @@ export function NewEventPage() {
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [description, setDescription] = useState('')
+  const [cost, setCost] = useState<string>('')
   const [isReserved, setIsReserved] = useState(false)
   const [isSettled, setIsSettled] = useState(false)
   const [isReservationNotNeeded, setIsReservationNotNeeded] = useState(false)
@@ -81,6 +82,7 @@ export function NewEventPage() {
     try {
       setIsSubmitting(true)
       setError(null)
+      const costNum = cost.trim() ? parseInt(cost, 10) : undefined
       await createTripEvent({
         trip_day_id: finalDayId,
         title: title.trim(),
@@ -88,6 +90,7 @@ export function NewEventPage() {
         start_time: startTime || undefined,
         end_time: endTime || undefined,
         description: description.trim() || undefined,
+        cost: costNum !== undefined && isNaN(costNum) ? undefined : costNum,
         is_reserved: isReserved,
         is_settled: isSettled,
         is_reservation_not_needed: isReservationNotNeeded,
@@ -154,6 +157,17 @@ export function NewEventPage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="詳細やメモ"
               rows={3}
+            />
+          </label>
+          <label>
+            費用（円）
+            <input
+              type="number"
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
+              placeholder="例: 1500"
+              min={0}
+              step={1}
             />
           </label>
           <div className="form-section">

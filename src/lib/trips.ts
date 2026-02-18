@@ -161,6 +161,7 @@ export async function createTripEvent(event: {
   is_reserved?: boolean
   is_settled?: boolean
   is_reservation_not_needed?: boolean
+  cost?: number | null
 }) {
   const { data, error } = await supabase
     .from('trip_events')
@@ -181,7 +182,7 @@ export async function updateTripEvent(
   updates: Partial<
     Pick<
       TripEvent,
-      'title' | 'location' | 'start_time' | 'end_time' | 'description' | 'sort_order' | 'is_reserved' | 'is_settled' | 'is_reservation_not_needed'
+      'title' | 'location' | 'start_time' | 'end_time' | 'description' | 'sort_order' | 'is_reserved' | 'is_settled' | 'is_reservation_not_needed' | 'cost'
     >
   >
 ) {

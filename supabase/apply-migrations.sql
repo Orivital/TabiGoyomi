@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS trip_events (
   is_reserved BOOLEAN NOT NULL DEFAULT false,
   is_settled BOOLEAN NOT NULL DEFAULT false,
   is_reservation_not_needed BOOLEAN NOT NULL DEFAULT false,
+  cost INTEGER,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

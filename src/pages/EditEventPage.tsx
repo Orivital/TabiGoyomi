@@ -10,6 +10,7 @@ export function EditEventPage() {
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [description, setDescription] = useState('')
+  const [cost, setCost] = useState<string>('')
   const [isReserved, setIsReserved] = useState(false)
   const [isSettled, setIsSettled] = useState(false)
   const [isReservationNotNeeded, setIsReservationNotNeeded] = useState(false)
@@ -30,6 +31,7 @@ export function EditEventPage() {
         setStartTime(event.start_time ?? '')
         setEndTime(event.end_time ?? '')
         setDescription(event.description ?? '')
+        setCost(event.cost != null ? String(event.cost) : '')
         setIsReserved(event.is_reserved ?? false)
         setIsSettled(event.is_settled ?? false)
         setIsReservationNotNeeded(event.is_reservation_not_needed ?? false)
@@ -48,12 +50,14 @@ export function EditEventPage() {
     try {
       setIsSubmitting(true)
       setError(null)
+      const costNum = cost.trim() ? parseInt(cost, 10) : null
       await updateTripEvent(eventId, {
         title: title.trim(),
         location: locationInput.trim() || undefined,
         start_time: startTime || undefined,
         end_time: endTime || undefined,
         description: description.trim() || undefined,
+        cost: costNum !== null && isNaN(costNum) ? null : costNum,
         is_reserved: isReserved,
         is_settled: isSettled,
         is_reservation_not_needed: isReservationNotNeeded,
@@ -157,6 +161,17 @@ export function EditEventPage() {
               onChange={(e) => setDescription(e.target.value)}
               placeholder="詳細やメモ"
               rows={3}
+            />
+          </label>
+          <label>
+            費用（円）
+            <input
+              type="number"
+              value={cost}
+              onChange={(e) => setCost(e.target.value)}
+              placeholder="例: 1500"
+              min={0}
+              step={1}
             />
           </label>
           <div className="form-section">

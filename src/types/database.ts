@@ -28,6 +28,7 @@ export type TripEvent = {
   is_reserved: boolean
   is_settled: boolean
   is_reservation_not_needed: boolean
+  cost: number | null
   created_at: string
   updated_at: string
 }

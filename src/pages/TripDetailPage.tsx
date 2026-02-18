@@ -105,6 +105,11 @@ export function TripDetailPage() {
                       <div className="event-content">
                         <div className="event-title-row">
                           <strong>{event.title}</strong>
+                          {event.cost != null && (
+                            <span className="event-cost">¥{event.cost.toLocaleString()}</span>
+                          )}
+                        </div>
+                        {(event.is_reserved || event.is_settled || event.is_reservation_not_needed) && (
                           <div className="event-status-badges">
                             {event.is_reserved && (
                               <span className="event-badge event-badge-reserved">予約済み</span>
@@ -116,7 +121,7 @@ export function TripDetailPage() {
                               <span className="event-badge event-badge-not-needed">予約不要</span>
                             )}
                           </div>
-                        </div>
+                        )}
                         {event.location && (
                           <span className="event-location">📍 {event.location}</span>
                         )}

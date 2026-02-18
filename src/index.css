@@ -618,6 +618,7 @@ body {
   display: flex;
   gap: 0.375rem;
   flex-shrink: 0;
+  margin-bottom: 0.25rem;
 }
 
 .event-badge {
@@ -642,6 +643,14 @@ body {
 .event-badge-not-needed {
   background: rgba(156, 163, 175, 0.1);
   color: #6b7280;
+}
+
+.event-cost {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
 }
 
 .event-location {
