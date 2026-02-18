@@ -1,0 +1,17 @@
+version: '3'
+
+tasks:
+  dev:
+    desc: Start development server
+    cmds:
+      - devbox run dev
+
+  build:
+    desc: Build the project
+    cmds:
+      - devbox run build
+
+  install:
+    desc: Install dependencies
+    cmds:
+      - devbox run install
