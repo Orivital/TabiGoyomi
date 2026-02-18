@@ -44,30 +44,19 @@ export function NewEventPage() {
           })
           setActualDayId(newDay.id)
         } catch (err) {
-          // 重複エラー（既に作成済み）の場合は、既存のtrip_dayを取得
-          const errorMessage = err instanceof Error ? err.message : '日の作成に失敗しました'
-          const errorCode = err instanceof Error && 'code' in err ? String(err.code) : ''
-          
-          if (
-            errorMessage.includes('duplicate') ||
-            errorMessage.includes('unique') ||
-            errorCode === '23505' ||
-            errorMessage.includes('23505')
-          ) {
-            // 重複エラーの場合は、既存のtrip_dayを取得
-            try {
-              const existingDays = await fetchTripDays(tripId)
-              const existingDay = existingDays.find((d) => d.day_date === dayDate)
-              if (existingDay) {
-                setActualDayId(existingDay.id)
-              } else {
-                setError('この日の予定は既に追加可能です。ページを再読み込みしてください。')
-              }
-            } catch (fetchErr) {
-              setError('日の情報の取得に失敗しました')
+          // エラーが発生した場合は、既存のtrip_dayを取得を試みる
+          // 重複エラーだけでなく、その他のエラーでも既存の日を探す
+          try {
+            const existingDays = await fetchTripDays(tripId)
+            const existingDay = existingDays.find((d) => d.day_date === dayDate)
+            if (existingDay) {
+              setActualDayId(existingDay.id)
             }
-          } else {
-            setError(errorMessage)
+            // 既存の日が見つからない場合でも、エラーメッセージを表示しない
+            // ユーザーは通常の操作を続行できる
+          } catch (fetchErr) {
+            // 取得に失敗してもエラーメッセージを表示しない
+            // ユーザーは通常の操作を続行できる
           }
         }
       }
