@@ -25,6 +25,9 @@ export type TripEvent = {
   end_time: string | null
   description: string | null
   sort_order: number
+  is_reserved: boolean
+  is_settled: boolean
+  is_reservation_not_needed: boolean
   created_at: string
   updated_at: string
 }

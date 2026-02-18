@@ -16,6 +16,9 @@ export function NewEventPage() {
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
   const [description, setDescription] = useState('')
+  const [isReserved, setIsReserved] = useState(false)
+  const [isSettled, setIsSettled] = useState(false)
+  const [isReservationNotNeeded, setIsReservationNotNeeded] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [actualDayId, setActualDayId] = useState<string | null>(dayId || null)
@@ -85,6 +88,9 @@ export function NewEventPage() {
         start_time: startTime || undefined,
         end_time: endTime || undefined,
         description: description.trim() || undefined,
+        is_reserved: isReserved,
+        is_settled: isSettled,
+        is_reservation_not_needed: isReservationNotNeeded,
       })
       navigate(`/trips/${tripId}`)
     } catch (err) {
@@ -150,6 +156,41 @@ export function NewEventPage() {
               rows={3}
             />
           </label>
+          <div className="form-section">
+            <label>
+              予約
+              <select
+                value={
+                  isReserved
+                    ? 'reserved'
+                    : isReservationNotNeeded
+                    ? 'not_needed'
+                    : ''
+                }
+                onChange={(e) => {
+                  const value = e.target.value
+                  setIsReserved(value === 'reserved')
+                  setIsReservationNotNeeded(value === 'not_needed')
+                }}
+              >
+                <option value="">選択なし</option>
+                <option value="reserved">予約済み</option>
+                <option value="not_needed">予約不要</option>
+              </select>
+            </label>
+          </div>
+          <div className="form-section">
+            <label>
+              精算
+              <select
+                value={isSettled ? 'settled' : ''}
+                onChange={(e) => setIsSettled(e.target.value === 'settled')}
+              >
+                <option value="">選択なし</option>
+                <option value="settled">精算済み</option>
+              </select>
+            </label>
+          </div>
           <button 
             type="submit" 
             className="btn-primary" 

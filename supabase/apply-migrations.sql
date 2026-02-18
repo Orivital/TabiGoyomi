@@ -79,6 +79,9 @@ CREATE TABLE IF NOT EXISTS trip_events (
   end_time TIME,
   description TEXT,
   sort_order INT NOT NULL DEFAULT 0,
+  is_reserved BOOLEAN NOT NULL DEFAULT false,
+  is_settled BOOLEAN NOT NULL DEFAULT false,
+  is_reservation_not_needed BOOLEAN NOT NULL DEFAULT false,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );

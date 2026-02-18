@@ -102,7 +102,20 @@ export function TripDetailPage() {
                           : formatTimeWithoutSeconds(event.start_time)}
                       </div>
                       <div className="event-content">
-                        <strong>{event.title}</strong>
+                        <div className="event-title-row">
+                          <strong>{event.title}</strong>
+                          <div className="event-status-badges">
+                            {event.is_reserved && (
+                              <span className="event-badge event-badge-reserved">予約済み</span>
+                            )}
+                            {event.is_settled && (
+                              <span className="event-badge event-badge-settled">精算済み</span>
+                            )}
+                            {event.is_reservation_not_needed && (
+                              <span className="event-badge event-badge-not-needed">予約不要</span>
+                            )}
+                          </div>
+                        </div>
                         {event.location && (
                           <span className="event-location">📍 {event.location}</span>
                         )}
