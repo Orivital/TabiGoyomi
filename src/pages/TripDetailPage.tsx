@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { formatDateWithWeekday, formatTimeWithoutSeconds, compareTimeStrings } from '../lib/dateFormat'
+import { formatDateWithWeekday, formatDateWithWeekdayWithoutYear, formatTimeWithoutSeconds, compareTimeStrings } from '../lib/dateFormat'
 import { useTripDetail } from '../hooks/useTripDetail'
 
 type LocationState = {
@@ -86,7 +86,8 @@ export function TripDetailPage() {
           {daysInRange.map((day, index) => (
             <section key={day.id} className="trip-day">
               <h3 className="day-date">
-                {index + 1}日目 ({formatDateWithWeekday(day.day_date)})
+                <span>{index + 1}日目</span>
+                <span>{formatDateWithWeekdayWithoutYear(day.day_date)}</span>
               </h3>
               {day.memo && <p className="day-memo">{day.memo}</p>}
               <ul className="event-list">

@@ -20,6 +20,37 @@ export function formatDateWithWeekday(ymd: string): string {
 }
 
 /**
+ * YYYY-MM-DD 形式の日付文字列を M/DD (曜日) 形式に変換（年を省略）
+ * @param ymd YYYY-MM-DD 形式の日付文字列
+ * @returns M/DD (曜日) 形式の文字列、または空文字列
+ */
+export function formatDateWithWeekdayWithoutYear(ymd: string): string {
+  if (!ymd) return ''
+  
+  const date = new Date(ymd + 'T12:00:00')
+  if (Number.isNaN(date.getTime())) {
+    // フォールバック: 年を除いた部分を返す
+    const parts = ymd.split('-')
+    if (parts.length === 3) {
+      const m = parts[1] ?? ''
+      const d = parts[2] ?? ''
+      if (m && d) {
+        return `${parseInt(m, 10)}/${parseInt(d, 10)}`
+      }
+    }
+    return ymd.replace(/-/g, '/')
+  }
+  
+  const m = date.getMonth() + 1
+  const d = date.getDate()
+  
+  const weekdayNames = ['日', '月', '火', '水', '木', '金', '土']
+  const weekday = weekdayNames[date.getDay()]
+  
+  return `${m}/${d} (${weekday})`
+}
+
+/**
  * HH:mm:ss 形式の時間文字列から秒を削除して HH:mm 形式に変換
  * @param time HH:mm:ss または HH:mm 形式の時間文字列
  * @returns HH:mm 形式の文字列
@@ -55,6 +86,9 @@ function timeToMinutes(time: string): number {
   }
   
   const parts = time.split(':')
+  if (parts.length < 2 || !parts[0] || !parts[1]) {
+    throw new Error(`不正な時間形式です: "${time}". HH:mm:ss または HH:mm 形式を期待しています。`)
+  }
   const hours = parseInt(parts[0], 10)
   const minutes = parseInt(parts[1], 10)
   
