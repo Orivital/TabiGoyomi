@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { formatDateWithWeekday, formatTimeWithoutSeconds } from '../lib/dateFormat'
+import { formatDateWithWeekday, formatTimeWithoutSeconds, compareTimeStrings } from '../lib/dateFormat'
 import { useTripDetail } from '../hooks/useTripDetail'
 
 type LocationState = {
@@ -25,8 +25,19 @@ export function TripDetailPage() {
 
     return dateRange.map((dateStr) => {
       const day = tripDays.find((d) => d.day_date === dateStr)
+      const events = day?.events || []
+      // イベントをstart_timeでソート（start_timeがnullの場合は最後に配置）
+      const sortedEvents = [...events].sort((a, b) => {
+        if (!a.start_time && !b.start_time) {
+          return a.sort_order - b.sort_order
+        }
+        if (!a.start_time) return 1
+        if (!b.start_time) return -1
+        return compareTimeStrings(a.start_time, b.start_time)
+      })
+      
       return day
-        ? { ...day, isGenerated: false }
+        ? { ...day, events: sortedEvents, isGenerated: false }
         : {
             id: `generated-${dateStr}`,
             trip_id: trip.id,

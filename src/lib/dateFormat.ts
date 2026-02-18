@@ -41,3 +41,37 @@ export function formatTimeWithoutSeconds(time: string | null): string {
   // 不正な形式の場合はエラーを投げる
   throw new Error(`不正な時間形式です: "${time}". HH:mm:ss または HH:mm 形式を期待しています。`)
 }
+
+/**
+ * 時刻文字列を分単位の数値に変換して比較用の値を取得
+ * @param time HH:mm:ss または HH:mm 形式の時間文字列
+ * @returns 分単位の数値（例: "10:30" -> 630）
+ * @throws {Error} 不正な形式の時間文字列が渡された場合
+ */
+function timeToMinutes(time: string): number {
+  // HH:mm:ss または HH:mm 形式のバリデーション
+  if (!time.match(/^\d{2}:\d{2}(:\d{2})?$/)) {
+    throw new Error(`不正な時間形式です: "${time}". HH:mm:ss または HH:mm 形式を期待しています。`)
+  }
+  
+  const parts = time.split(':')
+  const hours = parseInt(parts[0], 10)
+  const minutes = parseInt(parts[1], 10)
+  
+  // 数値の妥当性チェック
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || hours < 0 || hours >= 24 || minutes < 0 || minutes >= 60) {
+    throw new Error(`不正な時間値です: "${time}". 時間は0-23、分は0-59の範囲である必要があります。`)
+  }
+  
+  return hours * 60 + minutes
+}
+
+/**
+ * 時刻文字列を比較する（ソート用）
+ * @param a 時刻文字列1
+ * @param b 時刻文字列2
+ * @returns 比較結果（a < b なら負の値、a > b なら正の値、a === b なら0）
+ */
+export function compareTimeStrings(a: string, b: string): number {
+  return timeToMinutes(a) - timeToMinutes(b)
+}
