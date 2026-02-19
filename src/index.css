@@ -673,13 +673,14 @@ body {
 
 .event-location {
   font-size: 0.875rem;
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .event-description {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   margin: 0.25rem 0 0;
   color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .btn-add-event {
