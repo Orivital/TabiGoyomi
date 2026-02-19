@@ -1,4 +1,4 @@
--- 許可ユーザー（3人のGoogleメールを登録）
+-- 許可ユーザー（許可するユーザーのGoogleメールを登録）
 CREATE TABLE allowed_users (
   email TEXT PRIMARY KEY
 );

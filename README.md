@@ -1,6 +1,6 @@
 # 旅暦 - 旅程アプリ
 
-友人3人で共同編集できるプライベートな旅程PWAアプリです。
+複数人で共同編集できるプライベートな旅程PWAアプリです。
 
 ## 技術スタック
 
@@ -33,7 +33,7 @@ cp .env.example .env
    - Redirect URLs: `http://localhost:5173/**` と `http://localhost:5174/**`（Vite はポート 5173 または 5174 を使用）
    - 本番時は本番 URL を追加（例: `https://your-app.vercel.app/**`）
 4. **マイグレーション実行**: Supabase Dashboard → SQL Editor で `supabase/apply-migrations.sql` の内容を実行
-5. **許可ユーザー登録**: `supabase/seed.sql` のメールアドレスを3人のGoogleメールに置き換え、SQL Editor で実行
+5. **許可ユーザー登録**: `supabase/seed.sql` のメールアドレスを許可するユーザーのGoogleメールに置き換え、SQL Editor で実行
 
 （CLI を使う場合: `supabase link` でプロジェクトをリンク後、`pnpm db:push` でマイグレーション適用）
 

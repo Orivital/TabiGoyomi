@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: '旅暦',
         short_name: '旅暦',
-        description: '友人と共同で編集できる旅程アプリ',
+        description: '複数人で共同編集できる旅程アプリ',
         theme_color: '#2563eb',
         background_color: '#ffffff',
         display: 'standalone',
