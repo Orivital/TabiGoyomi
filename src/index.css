@@ -429,6 +429,17 @@ body {
   font-size: 1rem;
   background: white;
   cursor: pointer;
+  box-sizing: border-box;
+}
+
+.trip-form textarea,
+.event-form textarea {
+  resize: vertical;
+  max-width: 100%;
+  min-height: 4.5rem;
+  max-height: 20rem;
+  overflow-y: auto;
+  cursor: text;
 }
 
 .trip-form select,
