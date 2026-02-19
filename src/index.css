@@ -212,6 +212,13 @@ body {
   font-size: 0.9rem;
 }
 
+.trip-year-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 1.5rem 0 0.5rem;
+}
+
 .trip-list {
   list-style: none;
   padding: 0;
