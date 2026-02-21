@@ -27,7 +27,34 @@ body {
   color: var(--color-text);
 }
 
+/* 開発環境インジケーター */
+body.dev-mode {
+  --color-bg: #e0f2fe;
+}
+
+/* 開発環境ウォーターマーク */
+.dev-watermark {
+  position: fixed;
+  inset: -50% -50%;
+  width: 200%;
+  height: 200%;
+  z-index: 0;
+  pointer-events: none;
+  transform: rotate(-30deg);
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: rgba(37, 99, 235, 0.06);
+  white-space: pre;
+  line-height: 3.5rem;
+  letter-spacing: 1.5rem;
+  word-spacing: 2rem;
+  user-select: none;
+  overflow: hidden;
+}
+
 #root {
+  position: relative;
+  z-index: 1;
   min-height: 100vh;
 }
 
