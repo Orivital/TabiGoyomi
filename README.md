@@ -25,23 +25,34 @@ cp .env.example .env
 2. **Google プロバイダーを有効化**（必須）:
    - Supabase Dashboard → **Authentication** → **Providers**
    - **Google** を選択し、**Enable** をオンにする
-   - [Google Cloud Console](https://console.cloud.google.com/) で OAuth 2.0 クライアント ID を作成
+   - [Google Cloud Console](https://console.cloud.google.com/) で OAuth 2.0
+     クライアント ID を作成
    - Supabase に **Client ID** と **Client Secret** を入力して保存
-   - 「invalid response」や「provider is not enabled」エラーは、この設定が未完了の場合に発生します
-3. **リダイレクト URL 設定**（重要）: Authentication → URL Configuration で以下を追加:
+   - 「invalid response」や「provider is not
+     enabled」エラーは、この設定が未完了の場合に発生します
+3. **リダイレクト URL 設定**（重要）: Authentication → URL Configuration
+   で以下を追加:
    - Site URL: `http://localhost:5173`（開発時）
-   - Redirect URLs: `http://localhost:5173/**` と `http://localhost:5174/**`（Vite はポート 5173 または 5174 を使用）
+   - Redirect URLs: `http://localhost:5173/**` と
+     `http://localhost:5174/**`（Vite はポート 5173 または 5174 を使用）
    - 本番時は本番 URL を追加（例: `https://your-app.vercel.app/**`）
-4. **マイグレーション実行**: Supabase Dashboard → SQL Editor で `supabase/apply-migrations.sql` の内容を実行
-5. **許可ユーザー登録**: `supabase/seed.sql` のメールアドレスを許可するユーザーのGoogleメールに置き換え、SQL Editor で実行
+4. **マイグレーション実行**: Supabase Dashboard → SQL Editor で
+   `supabase/apply-migrations.sql` の内容を実行
+5. **許可ユーザー登録**: `supabase/seed.sql`
+   のメールアドレスを許可するユーザーのGoogleメールに置き換え、SQL Editor で実行
 
-（CLI を使う場合: `supabase link` でプロジェクトをリンク後、`pnpm db:push` でマイグレーション適用）
+（CLI を使う場合: `supabase link` でプロジェクトをリンク後、`pnpm db:push`
+でマイグレーション適用）
 
 ### Supabase MCP で実行する場合
 
-Cursor に [Supabase MCP](https://supabase.com/mcp) を設定済みなら、AI に「Supabase MCP で `supabase/apply-migrations.sql` を実行して」と依頼すると、`execute_sql` でマイグレーションを実行できます。
+Cursor に [Supabase MCP](https://supabase.com/mcp) を設定済みなら、AI
+に「Supabase MCP で `supabase/apply-migrations.sql`
+を実行して」と依頼すると、`execute_sql` でマイグレーションを実行できます。
 
-プロジェクトを限定するには、`.cursor/mcp.json` の Supabase の URL に `?project_ref=あなたのプロジェクトID` を追加してください（プロジェクト ID は Supabase URL の `https://xxxxx.supabase.co` の `xxxxx` 部分）。
+プロジェクトを限定するには、`.cursor/mcp.json` の Supabase の URL に
+`?project_ref=あなたのプロジェクトID` を追加してください（プロジェクト ID は
+Supabase URL の `https://xxxxx.supabase.co` の `xxxxx` 部分）。
 
 ### 3. ローカル開発
 
@@ -74,19 +85,7 @@ task build
 pnpm build
 ```
 
-### 5. 招待メール（任意）
-
-招待メールを送信するには、Supabase Edge Function のシークレットを設定してください。
-
-1. [Resend](https://resend.com) で API キーを取得
-2. Supabase Dashboard → Edge Functions → invite-user → Settings
-3. シークレットを追加:
-   - `RESEND_API_KEY`: Resend の API キー
-   - `APP_URL`: アプリのURL（例: `https://your-app.vercel.app` または `http://localhost:5173`）
-
-未設定の場合も招待は動作しますが、メールは送信されず URL の手動共有が必要です。
-
-### 6. Vercel デプロイ
+### 5. Vercel デプロイ
 
 1. GitHub にリポジトリをプッシュ
 2. [Vercel](https://vercel.com) でプロジェクトをインポート
@@ -99,4 +98,6 @@ pnpm build
 
 **原因**: Supabase で Google プロバイダーが有効になっていません。
 
-**対処**: Supabase Dashboard → Authentication → Providers → Google で、Enable をオンにし、Google Cloud Console で取得した Client ID と Client Secret を入力してください。
+**対処**: Supabase Dashboard → Authentication → Providers → Google で、Enable
+をオンにし、Google Cloud Console で取得した Client ID と Client Secret
+を入力してください。

@@ -58,14 +58,9 @@ export function TripListPage() {
       <main className="main">
         <div className="trip-list-header">
           <h2>旅程一覧</h2>
-          <div className="header-actions">
-            <Link to="/invite" className="btn-secondary">
-              招待
-            </Link>
-            <Link to="/trips/new" className="btn-primary">
-              新規作成
-            </Link>
-          </div>
+          <Link to="/trips/new" className="btn-primary">
+            新規作成
+          </Link>
         </div>
 
         {trips.length === 0 ? (
