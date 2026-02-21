@@ -82,7 +82,7 @@ export function TripListPage() {
             <section key={year}>
               <h3 className="trip-year-heading">{year === 'unknown' ? '日付不明' : `${year}年`}</h3>
               <ul className="trip-list">
-                {grouped[year].map((trip) => (
+                {grouped[year]?.map((trip) => (
                   <li key={trip.id}>
                     <EditableTripCard trip={trip} onUpdated={refetch} />
                   </li>
