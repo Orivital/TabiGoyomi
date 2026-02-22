@@ -473,7 +473,18 @@ body.dev-mode {
 }
 
 .form-row label {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: 0;
+  width: 0;
+}
+
+/* スマホだと終了時刻の入力欄が狭くなるので調整 */
+.form-row input[type="time"] {
+  min-width: 0;
+  width: 100%;
+  min-height: 3rem;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .checkbox-label {
