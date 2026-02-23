@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { updateTrip, deleteTrip } from '../lib/trips'
+import { updateTrip, deleteTrip, uploadTripThumbnail, deleteTripThumbnail } from '../lib/trips'
 import { formatDateWithWeekdayWithoutYear } from '../lib/dateFormat'
 import { DatePickerField } from './DatePickerField'
 import { useDateRangeAdjustment } from '../hooks/useDateRangeAdjustment'
@@ -17,6 +17,18 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null)
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
+  const [shouldDeleteThumbnail, setShouldDeleteThumbnail] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (thumbnailPreview && thumbnailPreview.startsWith('blob:')) {
+        URL.revokeObjectURL(thumbnailPreview)
+      }
+    }
+  }, [thumbnailPreview])
   const {
     startDate,
     endDate,
@@ -38,6 +50,9 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
     setTitle(trip.title)
     setStartDate(trip.start_date)
     setEndDate(trip.end_date)
+    setThumbnailFile(null)
+    setThumbnailPreview(trip.thumbnail_url)
+    setShouldDeleteThumbnail(false)
     setError(null)
   }
 
@@ -45,6 +60,9 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
     e.preventDefault()
     e.stopPropagation()
     setIsEditing(false)
+    setThumbnailFile(null)
+    setThumbnailPreview(null)
+    setShouldDeleteThumbnail(false)
     setError(null)
   }
 
@@ -76,6 +94,31 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
     setIsConfirmingDelete(false)
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setThumbnailFile(file)
+    setShouldDeleteThumbnail(false)
+    if (thumbnailPreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(thumbnailPreview)
+    }
+    setThumbnailPreview(URL.createObjectURL(file))
+  }
+
+  const handleRemoveThumbnail = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setThumbnailFile(null)
+    if (thumbnailPreview?.startsWith('blob:')) {
+      URL.revokeObjectURL(thumbnailPreview)
+    }
+    setThumbnailPreview(null)
+    setShouldDeleteThumbnail(true)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -89,6 +132,11 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
         start_date: startDate,
         end_date: adjustedEndDate,
       })
+      if (thumbnailFile) {
+        await uploadTripThumbnail(trip.id, thumbnailFile)
+      } else if (shouldDeleteThumbnail) {
+        await deleteTripThumbnail(trip.id)
+      }
       onUpdated()
       setIsEditing(false)
     } catch (err) {
@@ -136,6 +184,42 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
               required
             />
           </label>
+          <div className="trip-card-thumbnail-edit-section">
+            <span className="trip-card-thumbnail-label">サムネイル</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handleFileSelect}
+              hidden
+            />
+            {thumbnailPreview ? (
+              <div className="trip-card-thumbnail-preview-wrapper">
+                <img
+                  src={thumbnailPreview}
+                  alt="サムネイルプレビュー"
+                  className="trip-card-thumbnail-preview"
+                />
+                <button
+                  type="button"
+                  className="trip-card-thumbnail-remove-btn"
+                  onClick={handleRemoveThumbnail}
+                >
+                  画像を削除
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="trip-card-thumbnail-upload-area"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <span className="trip-card-thumbnail-placeholder">
+                  タップして画像を選択
+                </span>
+              </button>
+            )}
+          </div>
           <div className="trip-card-edit-actions">
             <button
               type="button"
@@ -161,7 +245,14 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
   return (
     <div className="trip-card-wrapper">
       {error && <p className="error trip-card-error">{error}</p>}
-      <Link to={`/trips/${trip.id}`} className="trip-card">
+      <Link to={`/trips/${trip.id}`} className={`trip-card${trip.thumbnail_url ? ' trip-card--has-thumbnail' : ''}`}>
+        {trip.thumbnail_url && (
+          <img
+            src={trip.thumbnail_url}
+            alt={trip.title}
+            className="trip-card-thumbnail"
+          />
+        )}
         <p className="trip-dates">
           {formatDateWithWeekdayWithoutYear(trip.start_date)} 〜 {formatDateWithWeekdayWithoutYear(trip.end_date)}
         </p>

@@ -312,6 +312,84 @@ body.dev-mode {
   font-size: 0.875rem;
 }
 
+/* サムネイル表示モード */
+.trip-card--has-thumbnail {
+  padding-top: 0;
+}
+
+.trip-card-thumbnail {
+  display: block;
+  width: calc(100% + 2.5rem + 2px);
+  margin: -1px -1.25rem 0.75rem calc(-1.25rem - 1px);
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 12px 12px 0 0;
+}
+
+/* サムネイル編集モード */
+.trip-card-thumbnail-edit-section {
+  margin-bottom: 1rem;
+}
+
+.trip-card-thumbnail-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.trip-card-thumbnail-upload-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 2px dashed var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.trip-card-thumbnail-upload-area:hover {
+  border-color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.trip-card-thumbnail-placeholder {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.trip-card-thumbnail-preview-wrapper {
+  position: relative;
+}
+
+.trip-card-thumbnail-preview {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.trip-card-thumbnail-remove-btn {
+  display: block;
+  margin-top: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-error);
+  background: transparent;
+  border: 1px solid var(--color-error);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.trip-card-thumbnail-remove-btn:hover {
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
+}
+
 .trip-card--editing {
   padding: 1rem 1.25rem;
   background: white;

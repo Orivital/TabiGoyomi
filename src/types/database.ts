@@ -3,6 +3,7 @@ export type Trip = {
   title: string
   start_date: string
   end_date: string
+  thumbnail_url: string | null
   created_at: string
   updated_at: string
 }

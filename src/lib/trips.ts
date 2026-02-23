@@ -105,8 +105,76 @@ export async function updateTrip(
 }
 
 export async function deleteTrip(id: string) {
+  // ストレージからサムネイルをクリーンアップ
+  await removeTripThumbnailFile(id)
   const { error } = await supabase.from('trips').delete().eq('id', id)
   if (error) throw error
+}
+
+const THUMBNAIL_BUCKET = 'trip-thumbnails'
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
+
+const EXTENSION_MAP: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+}
+
+export async function uploadTripThumbnail(tripId: string, file: File) {
+  // バリデーション
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new Error('JPEG、PNG、WebP のみアップロードできます')
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error('ファイルサイズは5MB以下にしてください')
+  }
+
+  // 既存ファイルを削除
+  await removeTripThumbnailFile(tripId)
+
+  const ext = EXTENSION_MAP[file.type] || 'jpg'
+  const filePath = `${tripId}/thumbnail.${ext}`
+
+  const { error: uploadError } = await supabase.storage
+    .from(THUMBNAIL_BUCKET)
+    .upload(filePath, file, { upsert: true })
+  if (uploadError) throw uploadError
+
+  const { data: urlData } = supabase.storage
+    .from(THUMBNAIL_BUCKET)
+    .getPublicUrl(filePath)
+
+  const { error: updateError } = await supabase
+    .from('trips')
+    .update({
+      thumbnail_url: urlData.publicUrl,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', tripId)
+  if (updateError) throw updateError
+
+  return urlData.publicUrl
+}
+
+export async function deleteTripThumbnail(tripId: string) {
+  await removeTripThumbnailFile(tripId)
+
+  const { error } = await supabase
+    .from('trips')
+    .update({
+      thumbnail_url: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', tripId)
+  if (error) throw error
+}
+
+async function removeTripThumbnailFile(tripId: string) {
+  const extensions = ['jpg', 'png', 'webp']
+  const paths = extensions.map((ext) => `${tripId}/thumbnail.${ext}`)
+  // エラーは無視（ファイルが存在しない場合もある）
+  await supabase.storage.from(THUMBNAIL_BUCKET).remove(paths)
 }
 
 export async function createTripDay(tripDay: {
