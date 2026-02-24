@@ -8,10 +8,11 @@ import type { Trip } from '../types/database'
 
 type Props = {
   trip: Trip
+  totalCost: number | null
   onUpdated: () => void
 }
 
-export function EditableTripCard({ trip, onUpdated }: Props) {
+export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(trip.title)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -256,6 +257,9 @@ export function EditableTripCard({ trip, onUpdated }: Props) {
         <p className="trip-dates">
           {formatDateWithWeekdayWithoutYear(trip.start_date)} 〜 {formatDateWithWeekdayWithoutYear(trip.end_date)}
         </p>
+        {totalCost != null && totalCost > 0 && (
+          <p className="trip-card-total-cost">💰 {totalCost.toLocaleString()}円</p>
+        )}
         <div className="trip-card-title-row">
           <h3>{trip.title}</h3>
           <div className="trip-card-actions">

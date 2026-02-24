@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { fetchTrips } from '../lib/trips'
+import { fetchTrips, fetchTripTotalCosts } from '../lib/trips'
 import type { Trip } from '../types/database'
 
 export function useTrips() {
   const [trips, setTrips] = useState<Trip[]>([])
+  const [tripCosts, setTripCosts] = useState<Record<string, number>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
 
@@ -12,8 +13,12 @@ export function useTrips() {
     try {
       setIsLoading(true)
       setError(null)
-      const data = await fetchTrips()
+      const [data, costs] = await Promise.all([
+        fetchTrips(),
+        fetchTripTotalCosts(),
+      ])
       setTrips(data)
+      setTripCosts(costs)
     } catch (e) {
       setError(e instanceof Error ? e : new Error('Failed to load trips'))
     } finally {
@@ -42,5 +47,5 @@ export function useTrips() {
     }
   }, [])
 
-  return { trips, isLoading, error, refetch: loadTrips }
+  return { trips, tripCosts, isLoading, error, refetch: loadTrips }
 }

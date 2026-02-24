@@ -27,7 +27,7 @@ function groupTripsByYear(trips: Trip[]): Record<string, Trip[]> {
 }
 
 export function TripListPage() {
-  const { trips, isLoading, error, refetch } = useTrips()
+  const { trips, tripCosts, isLoading, error, refetch } = useTrips()
   const { signOut } = useAuth()
 
   if (isLoading) {
@@ -79,7 +79,7 @@ export function TripListPage() {
               <ul className="trip-list">
                 {grouped[year]?.map((trip) => (
                   <li key={trip.id}>
-                    <EditableTripCard trip={trip} onUpdated={refetch} />
+                    <EditableTripCard trip={trip} totalCost={tripCosts[trip.id] ?? null} onUpdated={refetch} />
                   </li>
                 ))}
               </ul>

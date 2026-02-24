@@ -11,6 +11,26 @@ export async function fetchTrips() {
   return data as Trip[]
 }
 
+export async function fetchTripTotalCosts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from('trip_days')
+    .select('trip_id, trip_events(cost)')
+
+  if (error) throw error
+
+  const costMap: Record<string, number> = {}
+  for (const day of data ?? []) {
+    const tripId = (day as { trip_id: string }).trip_id
+    const events = (day as { trip_events: { cost: number | null }[] }).trip_events ?? []
+    for (const event of events) {
+      if (event.cost != null) {
+        costMap[tripId] = (costMap[tripId] ?? 0) + event.cost
+      }
+    }
+  }
+  return costMap
+}
+
 export async function fetchTrip(id: string) {
   const { data, error } = await supabase
     .from('trips')
