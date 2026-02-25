@@ -161,16 +161,17 @@ body.dev-mode {
   cursor: not-allowed;
 }
 
-.trip-list-header {
+.trip-list-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
+  justify-content: flex-end;
+  margin-bottom: 1.5rem;
 }
 
-.trip-list-header h2 {
-  font-size: 1.25rem;
-  margin: 0;
+.trip-list-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: 1rem;
 }
 
 .trip-year-heading {
