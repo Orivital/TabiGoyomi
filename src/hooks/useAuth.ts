@@ -27,15 +27,19 @@ export function useAuth() {
       // #endregion
       setUser(session?.user ?? null)
       if (session?.user?.email) {
-        checkAllowed(session.user.email).then((v)=>{setIsAllowed(v);}).catch((e)=>{
+        checkAllowed(session.user.email).then((v)=>{
+          setIsAllowed(v)
+          setIsLoading(false)
+        }).catch((e)=>{
           // #region agent log
           captureError('useAuth:checkAllowed', e)
           // #endregion
+          setIsLoading(false)
         })
       } else {
         setIsAllowed(null)
+        setIsLoading(false)
       }
-      setIsLoading(false)
     }).catch((e)=>{
       // #region agent log
       captureError('useAuth:getSession', e)
