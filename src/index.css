@@ -161,10 +161,21 @@ body.dev-mode {
   cursor: not-allowed;
 }
 
-.trip-list-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 1.5rem;
+.btn-logout {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 1;
+  position: relative;
+  margin-left: auto;
+}
+
+.btn-logout:hover {
+  color: var(--color-text);
+  text-decoration: underline;
 }
 
 .trip-list-header {

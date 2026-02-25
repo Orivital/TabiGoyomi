@@ -50,14 +50,12 @@ export function TripListPage() {
     <div className="page">
       <header className="header">
         <h1>旅暦</h1>
+        <button type="button" className="btn-logout" onClick={() => signOut()}>
+          ログアウト
+        </button>
       </header>
 
       <main className="main">
-        <div className="trip-list-actions">
-          <button type="button" className="btn-secondary" onClick={() => signOut()}>
-            ログアウト
-          </button>
-        </div>
         <div className="trip-list-header">
           <Link to="/trips/new" className="btn-primary">
             新規作成
