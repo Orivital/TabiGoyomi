@@ -452,6 +452,59 @@ body.dev-mode {
   flex: 1;
 }
 
+/* 範囲外イベント解決UI */
+.out-of-range-notice {
+  padding: 0;
+}
+
+.out-of-range-notice-text {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  margin: 0 0 1rem;
+  line-height: 1.6;
+}
+
+.out-of-range-day {
+  background: var(--color-bg);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.out-of-range-day-header {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-bottom: 0.5rem;
+}
+
+.out-of-range-event-list {
+  list-style: disc;
+  padding-left: 1.25rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.out-of-range-event-list li {
+  margin-bottom: 0.125rem;
+}
+
+.out-of-range-action-select {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 2.5rem 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background: white;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  cursor: pointer;
+}
+
 .empty {
   text-align: center;
   color: var(--color-text-muted);

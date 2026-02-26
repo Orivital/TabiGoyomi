@@ -1,6 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { updateTrip, deleteTrip, uploadTripThumbnail, deleteTripThumbnail } from '../lib/trips'
+import {
+  updateTrip,
+  deleteTrip,
+  uploadTripThumbnail,
+  deleteTripThumbnail,
+  fetchTripDaysWithEventsOutsideRange,
+  moveTripDayEventsToDate,
+  deleteOutOfRangeTripDays,
+  deleteTripDay,
+} from '../lib/trips'
+import type { TripDayWithEvents } from '../lib/trips'
 import { formatDateWithWeekdayWithoutYear } from '../lib/dateFormat'
 import { DatePickerField } from './DatePickerField'
 import { useDateRangeAdjustment } from '../hooks/useDateRangeAdjustment'
@@ -10,6 +20,18 @@ type Props = {
   trip: Trip
   totalCost: number | null
   onUpdated: () => void
+}
+
+type DayAction = { type: 'delete' } | { type: 'move'; targetDate: string }
+
+function generateDateRange(start: string, end: string): string[] {
+  const dates: string[] = []
+  const s = new Date(start + 'T12:00:00')
+  const e = new Date(end + 'T12:00:00')
+  for (let d = new Date(s); d <= e; d.setDate(d.getDate() + 1)) {
+    dates.push(d.toISOString().slice(0, 10))
+  }
+  return dates
 }
 
 export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
@@ -22,6 +44,12 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
   const [shouldDeleteThumbnail, setShouldDeleteThumbnail] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 範囲外イベント解決UI用の状態
+  const [outOfRangeDays, setOutOfRangeDays] = useState<TripDayWithEvents[]>([])
+  const [dayActions, setDayActions] = useState<Record<string, DayAction>>({})
+  const [isResolving, setIsResolving] = useState(false)
+  const [pendingSave, setPendingSave] = useState<{ title: string; startDate: string; endDate: string } | null>(null)
 
   useEffect(() => {
     return () => {
@@ -55,6 +83,10 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
     setThumbnailPreview(trip.thumbnail_url)
     setShouldDeleteThumbnail(false)
     setError(null)
+    setIsResolving(false)
+    setOutOfRangeDays([])
+    setDayActions({})
+    setPendingSave(null)
   }
 
   const handleCancel = (e: React.MouseEvent) => {
@@ -65,6 +97,10 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
     setThumbnailPreview(null)
     setShouldDeleteThumbnail(false)
     setError(null)
+    setIsResolving(false)
+    setOutOfRangeDays([])
+    setDayActions({})
+    setPendingSave(null)
   }
 
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -128,23 +164,168 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
       setIsSubmitting(true)
       setError(null)
       const adjustedEndDate = getAdjustedEndDate()
-      await updateTrip(trip.id, {
-        title: title.trim(),
-        start_date: startDate,
-        end_date: adjustedEndDate,
-      })
-      if (thumbnailFile) {
-        await uploadTripThumbnail(trip.id, thumbnailFile)
-      } else if (shouldDeleteThumbnail) {
-        await deleteTripThumbnail(trip.id)
+
+      // 範囲外にイベントを持つ日があるかチェック
+      const affected = await fetchTripDaysWithEventsOutsideRange(
+        trip.id,
+        startDate,
+        adjustedEndDate
+      )
+
+      if (affected.length > 0) {
+        // 解決UIを表示
+        setOutOfRangeDays(affected)
+        const newDateRange = generateDateRange(startDate, adjustedEndDate)
+        const defaultActions: Record<string, DayAction> = {}
+        for (const day of affected) {
+          defaultActions[day.id] = { type: 'move', targetDate: newDateRange[0] ?? startDate }
+        }
+        setDayActions(defaultActions)
+        setPendingSave({ title: title.trim(), startDate, endDate: adjustedEndDate })
+        setIsResolving(true)
+      } else {
+        // 影響なし → そのまま保存
+        await deleteOutOfRangeTripDays(trip.id, startDate, adjustedEndDate)
+        await updateTrip(trip.id, {
+          title: title.trim(),
+          start_date: startDate,
+          end_date: adjustedEndDate,
+        })
+        if (thumbnailFile) {
+          await uploadTripThumbnail(trip.id, thumbnailFile)
+        } else if (shouldDeleteThumbnail) {
+          await deleteTripThumbnail(trip.id)
+        }
+        onUpdated()
+        setIsEditing(false)
       }
-      onUpdated()
-      setIsEditing(false)
     } catch (err) {
       setError(err instanceof Error ? err.message : '更新に失敗しました')
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const handleResolveBack = () => {
+    setIsResolving(false)
+    setOutOfRangeDays([])
+    setDayActions({})
+    setPendingSave(null)
+  }
+
+  const handleResolveConfirm = async () => {
+    if (!pendingSave) return
+    try {
+      setIsSubmitting(true)
+      setError(null)
+
+      // 各日のアクションを実行
+      for (const day of outOfRangeDays) {
+        const action = dayActions[day.id]
+        if (!action || action.type === 'delete') {
+          await deleteTripDay(day.id)
+        } else if (action.type === 'move') {
+          await moveTripDayEventsToDate(day.id, trip.id, action.targetDate)
+          await deleteTripDay(day.id)
+        }
+      }
+
+      // 残った空の範囲外日を削除
+      await deleteOutOfRangeTripDays(trip.id, pendingSave.startDate, pendingSave.endDate)
+
+      // トリップ自体を更新
+      await updateTrip(trip.id, {
+        title: pendingSave.title,
+        start_date: pendingSave.startDate,
+        end_date: pendingSave.endDate,
+      })
+
+      if (thumbnailFile) {
+        await uploadTripThumbnail(trip.id, thumbnailFile)
+      } else if (shouldDeleteThumbnail) {
+        await deleteTripThumbnail(trip.id)
+      }
+
+      onUpdated()
+      setIsEditing(false)
+      setIsResolving(false)
+      setOutOfRangeDays([])
+      setDayActions({})
+      setPendingSave(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '更新に失敗しました')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleDayActionChange = (dayId: string, value: string) => {
+    if (value === 'delete') {
+      setDayActions((prev) => ({ ...prev, [dayId]: { type: 'delete' } }))
+    } else {
+      setDayActions((prev) => ({ ...prev, [dayId]: { type: 'move', targetDate: value } }))
+    }
+  }
+
+  // 解決UI
+  if (isResolving && pendingSave) {
+    const newDateRange = generateDateRange(pendingSave.startDate, pendingSave.endDate)
+    return (
+      <div className="trip-card trip-card--editing">
+        <div className="out-of-range-notice">
+          {error && <p className="error">{error}</p>}
+          <p className="out-of-range-notice-text">
+            日付変更により以下の日のイベントが範囲外になります。各日のイベントをどうするか選択してください。
+          </p>
+          {outOfRangeDays.map((day) => {
+            const action = dayActions[day.id]
+            const selectValue = action?.type === 'delete' ? 'delete' : action?.type === 'move' ? action.targetDate : ''
+            return (
+              <div key={day.id} className="out-of-range-day">
+                <div className="out-of-range-day-header">
+                  {formatDateWithWeekdayWithoutYear(day.day_date)}
+                </div>
+                <ul className="out-of-range-event-list">
+                  {day.trip_events.map((ev) => (
+                    <li key={ev.id}>{ev.title}</li>
+                  ))}
+                </ul>
+                <select
+                  className="out-of-range-action-select"
+                  value={selectValue}
+                  onChange={(e) => handleDayActionChange(day.id, e.target.value)}
+                >
+                  <option value="delete">削除する</option>
+                  {newDateRange.map((date) => (
+                    <option key={date} value={date}>
+                      {formatDateWithWeekdayWithoutYear(date)} に移動
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )
+          })}
+          <div className="trip-card-edit-actions">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleResolveBack}
+              disabled={isSubmitting}
+            >
+              戻る
+            </button>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={handleResolveConfirm}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? '保存中...' : '確定'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (isEditing) {

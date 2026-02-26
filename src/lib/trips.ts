@@ -1,6 +1,8 @@
 import { supabase } from './supabase'
 import type { Trip, TripDay, TripEvent } from '../types/database'
 
+export type TripDayWithEvents = TripDay & { trip_events: TripEvent[] }
+
 export async function fetchTrips() {
   const { data, error } = await supabase
     .from('trips')
@@ -195,6 +197,79 @@ async function removeTripThumbnailFile(tripId: string) {
   const paths = extensions.map((ext) => `${tripId}/thumbnail.${ext}`)
   // エラーは無視（ファイルが存在しない場合もある）
   await supabase.storage.from(THUMBNAIL_BUCKET).remove(paths)
+}
+
+export async function fetchTripDaysWithEventsOutsideRange(
+  tripId: string,
+  newStart: string,
+  newEnd: string
+): Promise<TripDayWithEvents[]> {
+  const { data, error } = await supabase
+    .from('trip_days')
+    .select('*, trip_events(*)')
+    .eq('trip_id', tripId)
+    .or(`day_date.lt.${newStart},day_date.gt.${newEnd}`)
+    .order('day_date', { ascending: true })
+
+  if (error) throw error
+
+  // イベントを持つ日だけ返す
+  return (data as TripDayWithEvents[]).filter(
+    (day) => day.trip_events.length > 0
+  )
+}
+
+export async function moveTripDayEventsToDate(
+  sourceDayId: string,
+  tripId: string,
+  targetDate: string
+): Promise<void> {
+  // 移動先の trip_day を取得（なければ作成）
+  let { data: targetDay } = await supabase
+    .from('trip_days')
+    .select('*')
+    .eq('trip_id', tripId)
+    .eq('day_date', targetDate)
+    .maybeSingle()
+
+  if (!targetDay) {
+    const { data: newDay, error: createError } = await supabase
+      .from('trip_days')
+      .insert({
+        trip_id: tripId,
+        day_date: targetDate,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+    if (createError) throw createError
+    targetDay = newDay
+  }
+
+  // ソース日のイベントを移動先に付け替え
+  const { error } = await supabase
+    .from('trip_events')
+    .update({
+      trip_day_id: (targetDay as TripDay).id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('trip_day_id', sourceDayId)
+
+  if (error) throw error
+}
+
+export async function deleteOutOfRangeTripDays(
+  tripId: string,
+  newStart: string,
+  newEnd: string
+): Promise<void> {
+  const { error } = await supabase
+    .from('trip_days')
+    .delete()
+    .eq('trip_id', tripId)
+    .or(`day_date.lt.${newStart},day_date.gt.${newEnd}`)
+
+  if (error) throw error
 }
 
 export async function createTripDay(tripDay: {
