@@ -13,9 +13,10 @@
     "db:reset": "supabase db reset"
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^2.0.2",
     "@supabase/supabase-js": "^2.47.0",
-    "react": "^19.0.0",
     "date-fns": "^4.1.0",
+    "react": "^19.0.0",
     "react-datepicker": "^9.1.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.13.0"

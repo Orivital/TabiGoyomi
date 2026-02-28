@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { fetchTripEvent, updateTripEvent, deleteTripEvent } from '../lib/trips'
+import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput'
+import type { PlaceDetails } from '../lib/googleMaps'
 
 export function EditEventPage() {
   const { tripId, eventId } = useParams<{ tripId: string; eventId: string }>()
@@ -14,6 +16,13 @@ export function EditEventPage() {
   const [isReserved, setIsReserved] = useState(false)
   const [isSettled, setIsSettled] = useState(false)
   const [isReservationNotNeeded, setIsReservationNotNeeded] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [openingHours, setOpeningHours] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [googleMapsUrl, setGoogleMapsUrl] = useState('')
+  const [showPlaceDetails, setShowPlaceDetails] = useState(true)
+  const [isPlaceDetailsOpen, setIsPlaceDetailsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -35,6 +44,15 @@ export function EditEventPage() {
         setIsReserved(event.is_reserved ?? false)
         setIsSettled(event.is_settled ?? false)
         setIsReservationNotNeeded(event.is_reservation_not_needed ?? false)
+        setPhone(event.phone ?? '')
+        setAddress(event.address ?? '')
+        setOpeningHours(event.opening_hours ?? '')
+        setWebsiteUrl(event.website_url ?? '')
+        setGoogleMapsUrl(event.google_maps_url ?? '')
+        if (event.phone || event.address || event.opening_hours || event.website_url || event.google_maps_url) {
+          setShowPlaceDetails(true)
+          setIsPlaceDetailsOpen(true)
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : '予定の読み込みに失敗しました')
       } finally {
@@ -43,6 +61,17 @@ export function EditEventPage() {
     }
     load()
   }, [eventId])
+
+  const handlePlaceSelect = (details: PlaceDetails) => {
+    setLocationInput(details.name)
+    setPhone(details.phone ?? '')
+    setAddress(details.address ?? '')
+    setOpeningHours(details.openingHours ?? '')
+    setWebsiteUrl(details.websiteUrl ?? '')
+    setGoogleMapsUrl(details.googleMapsUrl ?? '')
+    setShowPlaceDetails(true)
+    setIsPlaceDetailsOpen(true)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -61,6 +90,11 @@ export function EditEventPage() {
         is_reserved: isReserved,
         is_settled: isSettled,
         is_reservation_not_needed: isReservationNotNeeded,
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+        opening_hours: openingHours.trim() || null,
+        website_url: websiteUrl.trim() || null,
+        google_maps_url: googleMapsUrl.trim() || null,
       })
       navigate(`/trips/${tripId}`)
     } catch (err) {
@@ -129,13 +163,46 @@ export function EditEventPage() {
           </label>
           <label>
             場所
-            <input
-              type="text"
+            <PlaceAutocompleteInput
               value={locationInput}
-              onChange={(e) => setLocationInput(e.target.value)}
-              placeholder="例: 旭川市"
+              onChange={setLocationInput}
+              onPlaceSelect={handlePlaceSelect}
+              placeholder="例: 旭山動物園"
             />
           </label>
+          {showPlaceDetails && (
+            <div className="place-details-section">
+              <button
+                type="button"
+                className="place-details-toggle"
+                onClick={() => setIsPlaceDetailsOpen(!isPlaceDetailsOpen)}
+              >
+                場所の詳細情報 {isPlaceDetailsOpen ? '▼' : '▶'}
+              </button>
+              <div className={`place-details-fields${isPlaceDetailsOpen ? '' : ' place-details-fields--hidden'}`}>
+                <label>
+                  住所
+                  <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} />
+                </label>
+                <label>
+                  電話番号
+                  <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </label>
+                <label>
+                  営業時間
+                  <textarea value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} rows={3} />
+                </label>
+                <label>
+                  ウェブサイト
+                  <input type="text" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} />
+                </label>
+                <label>
+                  Google Maps URL
+                  <input type="text" value={googleMapsUrl} onChange={(e) => setGoogleMapsUrl(e.target.value)} />
+                </label>
+              </div>
+            </div>
+          )}
           <div className="form-row">
             <label>
               開始時刻

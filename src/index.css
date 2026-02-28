@@ -717,13 +717,14 @@ body.dev-mode {
   margin-bottom: 0.5rem;
   position: relative;
   z-index: 2;
+  background: var(--color-bg);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .event-card-link {
   display: block;
   padding: 0.75rem;
-  background: var(--color-bg);
-  border-radius: 8px;
   text-decoration: none;
   color: inherit;
   transition: background 0.15s;
@@ -821,6 +822,128 @@ body.dev-mode {
 
 .btn-add-event:hover {
   background: rgba(37, 99, 235, 0.08);
+}
+
+/* Place Autocomplete */
+.place-autocomplete {
+  position: relative;
+}
+
+.place-autocomplete input {
+  width: 100%;
+}
+
+.place-autocomplete-loading {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  padding: 0.25rem 0;
+}
+
+.place-autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0 0;
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.place-autocomplete-item {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.875rem;
+  gap: 0.125rem;
+}
+
+.place-autocomplete-item:hover {
+  background: var(--color-bg);
+}
+
+.place-autocomplete-main {
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.place-autocomplete-secondary {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+/* Place Details Section */
+.place-details-section {
+  margin-bottom: 1rem;
+  background: rgba(37, 99, 235, 0.04);
+  border: 1px solid rgba(37, 99, 235, 0.15);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.place-details-toggle {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.place-details-toggle:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.place-details-fields {
+  max-height: 600px;
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.35s ease;
+  opacity: 1;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.place-details-fields--hidden {
+  max-height: 0;
+  opacity: 0;
+  padding-bottom: 0;
+}
+
+.place-details-fields label {
+  font-size: 0.8rem;
+}
+
+/* Event Place Links on detail page */
+.event-place-links {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.event-place-link {
+  font-size: 0.8rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.event-place-link:hover {
+  text-decoration: underline;
 }
 
 @media (max-width: 480px) {

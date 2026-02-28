@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { createTripEvent, createTripDay, fetchTripDays } from '../lib/trips'
+import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput'
+import type { PlaceDetails } from '../lib/googleMaps'
 
 type LocationState = {
   dayDate?: string
@@ -20,6 +22,13 @@ export function NewEventPage() {
   const [isReserved, setIsReserved] = useState(false)
   const [isSettled, setIsSettled] = useState(false)
   const [isReservationNotNeeded, setIsReservationNotNeeded] = useState(false)
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [openingHours, setOpeningHours] = useState('')
+  const [websiteUrl, setWebsiteUrl] = useState('')
+  const [googleMapsUrl, setGoogleMapsUrl] = useState('')
+  const [showPlaceDetails, setShowPlaceDetails] = useState(true)
+  const [isPlaceDetailsOpen, setIsPlaceDetailsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [actualDayId, setActualDayId] = useState<string | null>(dayId || null)
@@ -64,6 +73,17 @@ export function NewEventPage() {
     initializeDay()
   }, [tripId, dayId, dayDate])
 
+  const handlePlaceSelect = (details: PlaceDetails) => {
+    setLocationInput(details.name)
+    setPhone(details.phone ?? '')
+    setAddress(details.address ?? '')
+    setOpeningHours(details.openingHours ?? '')
+    setWebsiteUrl(details.websiteUrl ?? '')
+    setGoogleMapsUrl(details.googleMapsUrl ?? '')
+    setShowPlaceDetails(true)
+    setIsPlaceDetailsOpen(true)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const finalDayId = actualDayId || dayId
@@ -83,6 +103,11 @@ export function NewEventPage() {
         is_reserved: isReserved,
         is_settled: isSettled,
         is_reservation_not_needed: isReservationNotNeeded,
+        phone: phone.trim() || undefined,
+        address: address.trim() || undefined,
+        opening_hours: openingHours.trim() || undefined,
+        website_url: websiteUrl.trim() || undefined,
+        google_maps_url: googleMapsUrl.trim() || undefined,
       })
       navigate(`/trips/${tripId}`)
     } catch (err) {
@@ -114,13 +139,46 @@ export function NewEventPage() {
           </label>
           <label>
             場所
-            <input
-              type="text"
+            <PlaceAutocompleteInput
               value={locationInput}
-              onChange={(e) => setLocationInput(e.target.value)}
-              placeholder="例: 旭川市"
+              onChange={setLocationInput}
+              onPlaceSelect={handlePlaceSelect}
+              placeholder="例: 旭山動物園"
             />
           </label>
+          {showPlaceDetails && (
+            <div className="place-details-section">
+              <button
+                type="button"
+                className="place-details-toggle"
+                onClick={() => setIsPlaceDetailsOpen(!isPlaceDetailsOpen)}
+              >
+                場所の詳細情報 {isPlaceDetailsOpen ? '▼' : '▶'}
+              </button>
+              <div className={`place-details-fields${isPlaceDetailsOpen ? '' : ' place-details-fields--hidden'}`}>
+                <label>
+                  住所
+                  <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} />
+                </label>
+                <label>
+                  電話番号
+                  <input type="text" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </label>
+                <label>
+                  営業時間
+                  <textarea value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} rows={3} />
+                </label>
+                <label>
+                  ウェブサイト
+                  <input type="text" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)} />
+                </label>
+                <label>
+                  Google Maps URL
+                  <input type="text" value={googleMapsUrl} onChange={(e) => setGoogleMapsUrl(e.target.value)} />
+                </label>
+              </div>
+            </div>
+          )}
           <div className="form-row">
             <label>
               開始時刻

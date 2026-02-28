@@ -89,8 +89,19 @@ pnpm build
 
 1. GitHub にリポジトリをプッシュ
 2. [Vercel](https://vercel.com) でプロジェクトをインポート
-3. 環境変数 `VITE_SUPABASE_URL` と `VITE_SUPABASE_ANON_KEY` を設定
+3. 環境変数 `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`、`VITE_GOOGLE_MAPS_API_KEY` を設定
 4. Supabase インテグレーションを有効化すると環境変数が自動連携されます
+
+### 6. Google Places API（任意）
+
+場所入力時のオートコンプリート機能を有効にするには、Google Maps API キーが必要です。
+
+1. [Google Cloud Console](https://console.cloud.google.com/) で API キーを作成
+2. **Maps JavaScript API** と **Places API (New)** を有効化
+3. `.env` に `VITE_GOOGLE_MAPS_API_KEY=your-api-key` を設定
+4. Vercel にも同じ環境変数を設定
+
+API キー未設定の場合は、通常の手動テキスト入力にフォールバックします。
 
 ## トラブルシューティング
 

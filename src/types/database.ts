@@ -30,6 +30,11 @@ export type TripEvent = {
   is_settled: boolean
   is_reservation_not_needed: boolean
   cost: number | null
+  phone: string | null
+  address: string | null
+  opening_hours: string | null
+  website_url: string | null
+  google_maps_url: string | null
   created_at: string
   updated_at: string
 }

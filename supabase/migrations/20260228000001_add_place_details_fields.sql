@@ -1,0 +1,5 @@
+ALTER TABLE trip_events ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE trip_events ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE trip_events ADD COLUMN IF NOT EXISTS opening_hours TEXT;
+ALTER TABLE trip_events ADD COLUMN IF NOT EXISTS website_url TEXT;
+ALTER TABLE trip_events ADD COLUMN IF NOT EXISTS google_maps_url TEXT;

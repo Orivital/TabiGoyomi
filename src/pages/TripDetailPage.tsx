@@ -130,6 +130,19 @@ export function TripDetailPage() {
                         )}
                       </div>
                     </Link>
+                    {(event.phone || event.google_maps_url || event.website_url) && (
+                      <div className="event-place-links">
+                        {event.phone && (
+                          <a href={`tel:${event.phone}`} className="event-place-link">📞 電話</a>
+                        )}
+                        {event.google_maps_url && (
+                          <a href={event.google_maps_url} target="_blank" rel="noopener noreferrer" className="event-place-link">🗺️ 地図</a>
+                        )}
+                        {event.website_url && (
+                          <a href={event.website_url} target="_blank" rel="noopener noreferrer" className="event-place-link">🌐 Web</a>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
