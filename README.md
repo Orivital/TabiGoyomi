@@ -56,15 +56,6 @@ Supabase URL の `https://xxxxx.supabase.co` の `xxxxx` 部分）。
 
 ### 3. ローカル開発
 
-#### Taskfile を使う場合（推奨）
-
-```bash
-task install  # 依存関係をインストール
-task dev      # 開発サーバーを起動
-```
-
-#### 手動で実行する場合
-
 ```bash
 devbox shell
 pnpm install
@@ -72,14 +63,6 @@ pnpm dev
 ```
 
 ### 4. ビルド
-
-#### Taskfile を使う場合
-
-```bash
-task build
-```
-
-#### 手動で実行する場合（ビルド）
 
 ```bash
 pnpm build
