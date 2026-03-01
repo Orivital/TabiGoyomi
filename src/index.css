@@ -678,18 +678,79 @@ body.dev-mode {
   min-width: auto;
 }
 
-.trip-days {
-  margin-top: 1.5rem;
+/* Day Indicator (タブナビゲーション) */
+.day-indicator {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-bg);
+  padding: 0.5rem 0;
 }
 
-.trip-day {
+.day-indicator-tabs {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.day-indicator-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.day-indicator-tab {
+  flex: 0 0 auto;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.2s, background 0.2s, border-color 0.2s;
+}
+
+.day-indicator-tab:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.day-indicator-tab--active {
+  color: white;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* Carousel */
+.trip-days-carousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 0.5rem;
+}
+
+.trip-days-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.trip-day-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
   background: white;
   border-radius: 12px;
   border: 1px solid var(--color-border);
   padding: 1rem 1.25rem;
-  margin-bottom: 1rem;
+  box-sizing: border-box;
   position: relative;
   z-index: 1;
+  /* header + trip-dates + day-indicator + padding 分を差し引く */
+  max-height: calc(100dvh - 14rem);
+  overflow-y: auto;
 }
 
 .day-date {
