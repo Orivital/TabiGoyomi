@@ -2,6 +2,8 @@ import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { formatDateWithWeekday, formatDateWithWeekdayWithoutYear, formatTimeWithoutSeconds, compareTimeStrings } from '../lib/dateFormat'
 import { useTripDetail } from '../hooks/useTripDetail'
+import { useCarousel } from '../hooks/useCarousel'
+import { DayIndicator } from '../components/DayIndicator'
 
 type LocationState = {
   dayDate: string
@@ -51,6 +53,13 @@ export function TripDetailPage() {
     })
   }, [trip, tripDays])
 
+  const { containerRef, activeIndex, scrollTo, handleScroll } = useCarousel(daysInRange.length)
+
+  const dayTabs = daysInRange.map((day, i) => ({
+    dayDate: day.day_date,
+    label: `${i + 1}日目`,
+  }))
+
   if (isLoading) {
     return (
       <div className="page">
@@ -82,9 +91,11 @@ export function TripDetailPage() {
           {formatDateWithWeekday(trip.start_date)} 〜 {formatDateWithWeekday(trip.end_date)}
         </p>
 
-        <div className="trip-days">
+        <DayIndicator days={dayTabs} activeIndex={activeIndex} onSelect={scrollTo} />
+
+        <div className="trip-days-carousel" ref={containerRef} onScroll={handleScroll}>
           {daysInRange.map((day, index) => (
-            <section key={day.id} className="trip-day">
+            <section key={day.id} className="trip-day-slide" data-carousel-index={index}>
               <h3 className="day-date">
                 <span>{index + 1}日目</span>
                 <span>{formatDateWithWeekdayWithoutYear(day.day_date)}</span>
