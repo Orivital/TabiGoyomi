@@ -52,7 +52,7 @@ export function NewEventPage() {
             day_date: dayDate,
           })
           setActualDayId(newDay.id)
-        } catch (err) {
+        } catch {
           // エラーが発生した場合は、既存のtrip_dayを取得を試みる
           // 重複エラーだけでなく、その他のエラーでも既存の日を探す
           try {
@@ -63,7 +63,7 @@ export function NewEventPage() {
             }
             // 既存の日が見つからない場合でも、エラーメッセージを表示しない
             // ユーザーは通常の操作を続行できる
-          } catch (fetchErr) {
+          } catch {
             // 取得に失敗してもエラーメッセージを表示しない
             // ユーザーは通常の操作を続行できる
           }
