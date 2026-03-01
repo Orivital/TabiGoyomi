@@ -9,7 +9,9 @@
     "scripts": {
       "dev": "pnpm dev",
       "build": "pnpm build",
-      "install": "pnpm install"
+      "install": "pnpm install",
+      "lint": "pnpm lint",
+      "lint:fix": "pnpm exec eslint . --fix"
     }
   }
 }
