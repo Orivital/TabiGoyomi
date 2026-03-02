@@ -1,5 +1,5 @@
-import { useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useMemo, useLayoutEffect, useEffect, useState } from 'react'
+import { useParams, Link, useLocation } from 'react-router-dom'
 import { formatDateWithWeekday, formatDateWithWeekdayWithoutYear, formatTimeWithoutSeconds, compareTimeStrings } from '../lib/dateFormat'
 import { useTripDetail } from '../hooks/useTripDetail'
 import { useCarousel } from '../hooks/useCarousel'
@@ -10,9 +10,17 @@ type LocationState = {
   isGenerated: boolean
 }
 
+type TripDetailLocationState = {
+  focusDayDate?: string
+}
+
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const location = useLocation()
   const { trip, tripDays, isLoading, error } = useTripDetail(id ?? null)
+  const locationState = location.state as TripDetailLocationState | null
+  const shouldRestoreFocus = Boolean(locationState?.focusDayDate)
+  const [isRestoringFocus, setIsRestoringFocus] = useState(shouldRestoreFocus)
 
   // 期間内の日付を生成し、trip_daysとマージする処理をuseMemoで最適化
   const daysInRange = useMemo(() => {
@@ -53,7 +61,40 @@ export function TripDetailPage() {
     })
   }, [trip, tripDays])
 
-  const { containerRef, activeIndex, scrollTo, handleScroll } = useCarousel(daysInRange.length)
+  const initialFocusIndex = useMemo(() => {
+    const focusDayDate = locationState?.focusDayDate
+    if (!focusDayDate || daysInRange.length === 0) return 0
+    const index = daysInRange.findIndex((day) => day.day_date === focusDayDate)
+    return index >= 0 ? index : 0
+  }, [daysInRange, locationState?.focusDayDate])
+
+  const { containerRef, activeIndex, scrollTo, handleScroll } = useCarousel(
+    daysInRange.length,
+    initialFocusIndex,
+    !isLoading
+  )
+  const displayActiveIndex = isRestoringFocus ? initialFocusIndex : activeIndex
+
+  useLayoutEffect(() => {
+    if (isLoading || !isRestoringFocus) return
+
+    if (initialFocusIndex === 0) {
+      setIsRestoringFocus(false)
+      return
+    }
+
+    scrollTo(initialFocusIndex, 'auto')
+  }, [initialFocusIndex, isLoading, isRestoringFocus, scrollTo])
+
+  useEffect(() => {
+    if (isLoading || !isRestoringFocus) return
+    if (activeIndex !== initialFocusIndex) return
+
+    const rafId = window.requestAnimationFrame(() => {
+      setIsRestoringFocus(false)
+    })
+    return () => window.cancelAnimationFrame(rafId)
+  }, [activeIndex, initialFocusIndex, isLoading, isRestoringFocus])
 
   const dayTabs = daysInRange.map((day, i) => ({
     dayDate: day.day_date,
@@ -91,9 +132,21 @@ export function TripDetailPage() {
           {formatDateWithWeekday(trip.start_date)} 〜 {formatDateWithWeekday(trip.end_date)}
         </p>
 
-        <DayIndicator days={dayTabs} activeIndex={activeIndex} onSelect={scrollTo} />
+        {!isRestoringFocus && (
+          <DayIndicator
+            days={dayTabs}
+            activeIndex={displayActiveIndex}
+            onSelect={scrollTo}
+            instantScroll={false}
+          />
+        )}
 
-        <div className="trip-days-carousel" ref={containerRef} onScroll={handleScroll}>
+        <div
+          className="trip-days-carousel"
+          ref={containerRef}
+          onScroll={handleScroll}
+          style={isRestoringFocus ? { visibility: 'hidden' } : undefined}
+        >
           {daysInRange.map((day, index) => (
             <section key={day.id} className="trip-day-slide" data-carousel-index={index}>
               <h3 className="day-date">
@@ -107,6 +160,7 @@ export function TripDetailPage() {
                     <Link
                       to={`/trips/${trip.id}/events/${event.id}/edit`}
                       className="event-card-link"
+                      state={{ focusDayDate: day.day_date } as TripDetailLocationState}
                     >
                       <div className="event-time">
                         {event.start_time && event.end_time

@@ -1,12 +1,19 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { fetchTripEvent, updateTripEvent, deleteTripEvent } from '../lib/trips'
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput'
 import type { PlaceDetails } from '../lib/googleMaps'
 
+type EditEventLocationState = {
+  focusDayDate?: string
+}
+
 export function EditEventPage() {
   const { tripId, eventId } = useParams<{ tripId: string; eventId: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const state = location.state as EditEventLocationState | null
+  const backToTripState = state?.focusDayDate ? { focusDayDate: state.focusDayDate } : undefined
   const [title, setTitle] = useState('')
   const [locationInput, setLocationInput] = useState('')
   const [startTime, setStartTime] = useState('')
@@ -96,7 +103,7 @@ export function EditEventPage() {
         website_url: websiteUrl.trim() || null,
         google_maps_url: googleMapsUrl.trim() || null,
       })
-      navigate(`/trips/${tripId}`)
+      navigate(`/trips/${tripId}`, { state: backToTripState })
     } catch (err) {
       setError(err instanceof Error ? err.message : '更新に失敗しました')
     } finally {
@@ -111,7 +118,7 @@ export function EditEventPage() {
       setIsSubmitting(true)
       setError(null)
       await deleteTripEvent(eventId)
-      navigate(`/trips/${tripId}`)
+      navigate(`/trips/${tripId}`, { state: backToTripState })
     } catch (err) {
       setError(err instanceof Error ? err.message : '削除に失敗しました')
     } finally {
@@ -131,7 +138,7 @@ export function EditEventPage() {
     return (
       <div className="page">
         <header className="header">
-          <Link to={`/trips/${tripId}`} className="back-link">← 戻る</Link>
+          <Link to={`/trips/${tripId}`} state={backToTripState} className="back-link">← 戻る</Link>
           <h1>予定を編集</h1>
         </header>
         <main className="main">
@@ -144,7 +151,7 @@ export function EditEventPage() {
   return (
     <div className="page">
       <header className="header">
-        <Link to={`/trips/${tripId}`} className="back-link">← 戻る</Link>
+        <Link to={`/trips/${tripId}`} state={backToTripState} className="back-link">← 戻る</Link>
         <h1>予定を編集</h1>
       </header>
 
