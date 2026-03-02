@@ -3,17 +3,14 @@ import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { fetchTripEvent, updateTripEvent, deleteTripEvent } from '../lib/trips'
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput'
 import type { PlaceDetails } from '../lib/googleMaps'
-
-type EditEventLocationState = {
-  focusDayDate?: string
-}
+import type { TripDetailLocationState } from '../types/navigation'
 
 export function EditEventPage() {
   const { tripId, eventId } = useParams<{ tripId: string; eventId: string }>()
   const navigate = useNavigate()
   const location = useLocation()
-  const state = location.state as EditEventLocationState | null
-  const backToTripState = state?.focusDayDate ? { focusDayDate: state.focusDayDate } : undefined
+  const state = location.state as TripDetailLocationState | null
+  const backToTripState = state?.focusDayDate ? { focusDayDate: state.focusDayDate, focusEventId: eventId } : undefined
   const [title, setTitle] = useState('')
   const [locationInput, setLocationInput] = useState('')
   const [startTime, setStartTime] = useState('')

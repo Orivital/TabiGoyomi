@@ -1,17 +1,14 @@
-import { useMemo, useLayoutEffect, useEffect, useState } from 'react'
+import { useMemo, useLayoutEffect, useEffect, useState, useRef } from 'react'
 import { useParams, Link, useLocation } from 'react-router-dom'
 import { formatDateWithWeekday, formatDateWithWeekdayWithoutYear, formatTimeWithoutSeconds, compareTimeStrings } from '../lib/dateFormat'
 import { useTripDetail } from '../hooks/useTripDetail'
 import { useCarousel } from '../hooks/useCarousel'
 import { DayIndicator } from '../components/DayIndicator'
+import type { TripDetailLocationState } from '../types/navigation'
 
 type LocationState = {
   dayDate: string
   isGenerated: boolean
-}
-
-type TripDetailLocationState = {
-  focusDayDate?: string
 }
 
 export function TripDetailPage() {
@@ -21,6 +18,7 @@ export function TripDetailPage() {
   const locationState = location.state as TripDetailLocationState | null
   const shouldRestoreFocus = Boolean(locationState?.focusDayDate)
   const [isRestoringFocus, setIsRestoringFocus] = useState(shouldRestoreFocus)
+  const hasScrolledToEventRef = useRef(false)
 
   // 期間内の日付を生成し、trip_daysとマージする処理をuseMemoで最適化
   const daysInRange = useMemo(() => {
@@ -96,6 +94,28 @@ export function TripDetailPage() {
     return () => window.cancelAnimationFrame(rafId)
   }, [activeIndex, initialFocusIndex, isLoading, isRestoringFocus])
 
+  // イベントカードの縦スクロール位置を復元
+  useLayoutEffect(() => {
+    if (isRestoringFocus || isLoading) return
+    if (hasScrolledToEventRef.current) return
+    const focusEventId = locationState?.focusEventId
+    if (!focusEventId) return
+    hasScrolledToEventRef.current = true
+
+    const carousel = containerRef.current
+    if (!carousel) return
+    const eventEl = carousel.querySelector(
+      `[data-event-id="${CSS.escape(focusEventId)}"]`
+    ) as HTMLElement | null
+    if (!eventEl) return
+
+    const slideEl = eventEl.closest('.trip-day-slide') as HTMLElement | null
+    if (!slideEl) return
+    const slideRect = slideEl.getBoundingClientRect()
+    const eventRect = eventEl.getBoundingClientRect()
+    slideEl.scrollTop = eventRect.top - slideRect.top - slideRect.height / 2 + eventRect.height / 2
+  }, [isRestoringFocus, isLoading, locationState?.focusEventId, containerRef])
+
   const dayTabs = daysInRange.map((day, i) => ({
     dayDate: day.day_date,
     label: `${i + 1}日目`,
@@ -156,7 +176,7 @@ export function TripDetailPage() {
               {day.memo && <p className="day-memo">{day.memo}</p>}
               <ul className="event-list">
                 {day.events.map((event) => (
-                  <li key={event.id} className="event-card">
+                  <li key={event.id} className="event-card" data-event-id={event.id}>
                     <Link
                       to={`/trips/${trip.id}/events/${event.id}/edit`}
                       className="event-card-link"
