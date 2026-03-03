@@ -6,6 +6,9 @@
   --color-border: #e5e7eb;
   --color-bg: #f9fafb;
   --color-error: #dc2626;
+  --color-warning-bg: #fef3c7;
+  --color-warning-border: #f59e0b;
+  --color-warning-text: #92400e;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -1005,6 +1008,29 @@ body.dev-mode {
 
 .event-place-link:hover {
   text-decoration: underline;
+}
+
+/* インアプリブラウザ警告バナー */
+.in-app-browser-banner {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: 10px;
+  max-width: 320px;
+  text-align: left;
+}
+
+.in-app-browser-banner p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-warning-text);
+  line-height: 1.6;
+}
+
+.in-app-browser-banner p + p {
+  margin-top: 0.5rem;
+  font-weight: 600;
 }
 
 @media (max-width: 480px) {

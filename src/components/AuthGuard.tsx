@@ -1,10 +1,13 @@
 import React from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { debugLog, captureError } from '../lib/debugLog'
+import { detectInAppBrowser } from '../lib/detectInAppBrowser'
 
 type AuthGuardProps = {
   children: React.ReactNode
 }
+
+const inAppBrowserName = detectInAppBrowser()
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const { user, isAllowed, isLoading, signInWithGoogle, signOut } = useAuth()
@@ -43,6 +46,17 @@ export function AuthGuard({ children }: AuthGuardProps) {
         }}
       >
         <h1>旅暦</h1>
+        {inAppBrowserName && (
+          <div className="in-app-browser-banner">
+            <p>
+              {inAppBrowserName}のブラウザでは
+              Google ログインが利用できません。
+            </p>
+            <p>
+              右上メニューから「ブラウザで開く」を選択してください。
+            </p>
+          </div>
+        )}
         {authError && (
           <p style={{ marginBottom: '1rem', color: '#dc2626', fontSize: '0.9rem' }}>
             {authError}
@@ -50,6 +64,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
         )}
         <button
           type="button"
+          className="btn-primary"
+          disabled={!!inAppBrowserName}
           onClick={() => {
             setAuthError(null)
             // #region agent log
@@ -71,15 +87,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
               // #endregion
               setAuthError(e instanceof Error ? e.message : 'ログインに失敗しました')
             });
-          }}
-          style={{
-            padding: '0.75rem 1.5rem',
-            fontSize: '1rem',
-            borderRadius: '8px',
-            border: 'none',
-            background: '#2563eb',
-            color: 'white',
-            cursor: 'pointer',
           }}
         >
           Googleでログイン
