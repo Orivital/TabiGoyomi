@@ -11,7 +11,9 @@
       "build": "pnpm build",
       "install": "pnpm install",
       "lint": "pnpm lint",
-      "lint:fix": "pnpm exec eslint . --fix"
+      "lint:fix": "pnpm exec eslint . --fix",
+      "test": "pnpm test",
+      "test:run": "pnpm test:run"
     }
   }
 }
