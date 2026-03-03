@@ -9,40 +9,73 @@
 - PWA (vite-plugin-pwa)
 - devbox (ローカル環境)
 
+## 環境構成
+
+| 環境 | 用途 | Supabase プロジェクト | 接続設定 |
+|------|------|----------------------|---------|
+| Development | ローカル開発 | ローカル（`supabase start`） | `.env.local` |
+| Staging (Preview) | 検証・プレビュー | TabiGoyomi-staging (`fowxrnfttrnvogssaqef`) | Vercel Preview 環境変数 |
+| Production | 本番 | TabiGoyomi (`ssyeychimkqjhzvwucap`) | Vercel Production 環境変数 |
+
 ## セットアップ
 
-### 1. 環境変数
-
-`.env.example` をコピーして `.env` を作成し、Supabase の値を設定してください。
+### 1. ローカル開発環境
 
 ```bash
-cp .env.example .env
+devbox shell
+pnpm install
 ```
 
-### 2. Supabase プロジェクト
+ローカル Supabase を起動します:
 
-1. [Supabase](https://supabase.com) でプロジェクトを作成
-2. **Google プロバイダーを有効化**（必須）:
-   - Supabase Dashboard → **Authentication** → **Providers**
-   - **Google** を選択し、**Enable** をオンにする
-   - [Google Cloud Console](https://console.cloud.google.com/) で OAuth 2.0
-     クライアント ID を作成
-   - Supabase に **Client ID** と **Client Secret** を入力して保存
-   - 「invalid response」や「provider is not
-     enabled」エラーは、この設定が未完了の場合に発生します
-3. **リダイレクト URL 設定**（重要）: Authentication → URL Configuration
-   で以下を追加:
-   - Site URL: `http://localhost:5173`（開発時）
-   - Redirect URLs: `http://localhost:5173/**` と
-     `http://localhost:5174/**`（Vite はポート 5173 または 5174 を使用）
-   - 本番時は本番 URL を追加（例: `https://your-app.vercel.app/**`）
-4. **マイグレーション実行**: Supabase Dashboard → SQL Editor で
-   `supabase/apply-migrations.sql` の内容を実行
-5. **許可ユーザー登録**: `supabase/seed.sql`
-   のメールアドレスを許可するユーザーのGoogleメールに置き換え、SQL Editor で実行
+```bash
+supabase start
+```
 
-（CLI を使う場合: `supabase link` でプロジェクトをリンク後、`pnpm db:push`
-でマイグレーション適用）
+`.env.local` はリポジトリに含まれています（gitignore 済み）。デフォルトのローカル
+Supabase 認証情報が設定されています。`supabase status` で確認した値に合わせて
+調整してください。
+
+```bash
+pnpm dev
+```
+
+### 2. Supabase 各環境の設定
+
+各 Supabase プロジェクト（ローカル・staging・production）に対して以下を設定します。
+
+#### Google プロバイダーの有効化（必須）
+
+- Supabase Dashboard → **Authentication** → **Providers**
+- **Google** を選択し、**Enable** をオンにする
+- [Google Cloud Console](https://console.cloud.google.com/) で OAuth 2.0
+  クライアント ID を作成
+- Supabase に **Client ID** と **Client Secret** を入力して保存
+
+#### リダイレクト URL 設定（重要）
+
+Authentication → URL Configuration で以下を追加:
+
+| 環境 | Site URL | Redirect URLs |
+|------|----------|---------------|
+| ローカル | `http://localhost:5173` | `http://localhost:5173/**`, `http://localhost:5174/**` |
+| Staging | `https://tabigoyomi-git-*.vercel.app` | `https://tabigoyomi-git-*.vercel.app/**` |
+| Production | `https://tabigoyomi.vercel.app` | `https://tabigoyomi.vercel.app/**` |
+
+#### マイグレーション実行
+
+CLI を使う場合:
+
+```bash
+supabase link --project-ref <project-id>
+pnpm db:push
+```
+
+または Supabase Dashboard → SQL Editor で `supabase/apply-migrations.sql` を実行。
+
+#### 許可ユーザー登録
+
+`supabase/seed.sql` のメールアドレスを実際のGoogleメールに置き換え、SQL Editor で実行。
 
 ### Supabase MCP で実行する場合
 
@@ -54,13 +87,30 @@ Cursor に [Supabase MCP](https://supabase.com/mcp) を設定済みなら、AI
 `?project_ref=あなたのプロジェクトID` を追加してください（プロジェクト ID は
 Supabase URL の `https://xxxxx.supabase.co` の `xxxxx` 部分）。
 
-### 3. ローカル開発
+### 3. Vercel 環境変数の設定
 
-```bash
-devbox shell
-pnpm install
-pnpm dev
-```
+[Vercel Dashboard](https://vercel.com) → プロジェクト → **Settings** →
+**Environment Variables** で以下を設定します。
+
+**Production 環境（`ssyeychimkqjhzvwucap`）:**
+
+| 変数名 | 対象 Environment |
+|--------|----------------|
+| `VITE_SUPABASE_URL` | Production |
+| `VITE_SUPABASE_ANON_KEY` | Production |
+| `VITE_GOOGLE_MAPS_API_KEY` | Production |
+
+**Preview 環境（staging: `fowxrnfttrnvogssaqef`）:**
+
+| 変数名 | 対象 Environment |
+|--------|----------------|
+| `VITE_SUPABASE_URL` | Preview |
+| `VITE_SUPABASE_ANON_KEY` | Preview |
+| `VITE_GOOGLE_MAPS_API_KEY` | Preview |
+
+Staging の接続情報:
+- URL: `https://fowxrnfttrnvogssaqef.supabase.co`
+- Anon Key: Supabase Dashboard → **Settings** → **API** で確認
 
 ### 4. ビルド
 
@@ -71,9 +121,7 @@ pnpm build
 ### 5. Vercel デプロイ
 
 1. GitHub にリポジトリをプッシュ
-2. [Vercel](https://vercel.com) でプロジェクトをインポート
-3. 環境変数 `VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`、`VITE_GOOGLE_MAPS_API_KEY` を設定
-4. Supabase インテグレーションを有効化すると環境変数が自動連携されます
+2. Vercel が自動でデプロイ（`main` ブランチ → Production、PR → Preview/Staging）
 
 ### 6. Google Places API（任意）
 

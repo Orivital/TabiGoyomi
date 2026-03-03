@@ -1,5 +1,5 @@
 {
-  "packages": ["nodejs@20", "pnpm@9"],
+  "packages": ["nodejs@20", "pnpm@9", "postgresql", "supabase-cli"],
   "env": {
     "DEVBOX_COREPACK_ENABLED": "true",
     "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0"
@@ -13,7 +13,10 @@
       "lint": "pnpm lint",
       "lint:fix": "pnpm exec eslint . --fix",
       "test": "pnpm test",
-      "test:run": "pnpm test:run"
+      "test:run": "pnpm test:run",
+      "supabase:start": "export $(grep -v '^#' .env.local | grep '^SUPABASE_' | xargs) && supabase stop 2>/dev/null; supabase start",
+      "db:sync": "set -a && . ./.env.local && set +a && PGPASSWORD=$SUPABASE_PROD_DB_PASSWORD pg_dump -h db.ssyeychimkqjhzvwucap.supabase.co -U postgres -d postgres --data-only --schema=public --no-privileges --no-owner -f /tmp/prod_data.sql && supabase db reset --local && psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -c 'TRUNCATE trip_events, trip_days, trips, allowed_users RESTART IDENTITY CASCADE;' && psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -f /tmp/prod_data.sql && echo 'DB sync complete'",
+      "db:sync-staging": "set -a && . ./.env.local && set +a && PGPASSWORD=$SUPABASE_PROD_DB_PASSWORD pg_dump -h db.ssyeychimkqjhzvwucap.supabase.co -U postgres -d postgres --data-only --schema=public --no-privileges --no-owner -f /tmp/prod_data.sql && PGPASSWORD=$SUPABASE_STAGING_DB_PASSWORD psql -h db.fowxrnfttrnvogssaqef.supabase.co -U postgres -d postgres -c 'TRUNCATE trip_events, trip_days, trips, allowed_users RESTART IDENTITY CASCADE;' && PGPASSWORD=$SUPABASE_STAGING_DB_PASSWORD psql -h db.fowxrnfttrnvogssaqef.supabase.co -U postgres -d postgres -f /tmp/prod_data.sql && echo 'Staging sync complete'"
     }
   }
 }
