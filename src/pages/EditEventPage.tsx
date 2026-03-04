@@ -269,7 +269,7 @@ export function EditEventPage() {
             {receiptPreviewUrl || (!removeReceipt && existingReceiptUrl) ? (
               <div className="receipt-image-preview-wrapper">
                 <img
-                  src={receiptPreviewUrl || existingReceiptUrl!}
+                  src={receiptPreviewUrl || existingReceiptUrl || ''}
                   alt="予約明細"
                   className="receipt-image-preview"
                   onClick={() => fileInputRef.current?.click()}
