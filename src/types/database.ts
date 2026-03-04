@@ -35,6 +35,7 @@ export type TripEvent = {
   opening_hours: string | null
   website_url: string | null
   google_maps_url: string | null
+  receipt_image_url: string | null
   created_at: string
   updated_at: string
 }

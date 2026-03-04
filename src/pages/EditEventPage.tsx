@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
-import { fetchTripEvent, updateTripEvent, deleteTripEvent } from '../lib/trips'
+import { fetchTripEvent, updateTripEvent, deleteTripEvent, uploadReceiptImage, deleteReceiptImage } from '../lib/trips'
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput'
 import type { PlaceDetails } from '../lib/googleMaps'
 import type { TripDetailLocationState } from '../types/navigation'
@@ -27,8 +27,20 @@ export function EditEventPage() {
   const [googleMapsUrl, setGoogleMapsUrl] = useState('')
   const [showPlaceDetails, setShowPlaceDetails] = useState(true)
   const [isPlaceDetailsOpen, setIsPlaceDetailsOpen] = useState(false)
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null)
+  const [existingReceiptUrl, setExistingReceiptUrl] = useState<string | null>(null)
+  const [removeReceipt, setRemoveReceipt] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    return () => {
+      if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -53,6 +65,7 @@ export function EditEventPage() {
         setOpeningHours(event.opening_hours ?? '')
         setWebsiteUrl(event.website_url ?? '')
         setGoogleMapsUrl(event.google_maps_url ?? '')
+        setExistingReceiptUrl(event.receipt_image_url ?? null)
         if (event.phone || event.address || event.opening_hours || event.website_url || event.google_maps_url) {
           setShowPlaceDetails(true)
           setIsPlaceDetailsOpen(true)
@@ -100,6 +113,12 @@ export function EditEventPage() {
         website_url: websiteUrl.trim() || null,
         google_maps_url: googleMapsUrl.trim() || null,
       })
+      // 予約明細画像の処理
+      if (receiptFile) {
+        await uploadReceiptImage(eventId, receiptFile)
+      } else if (removeReceipt && existingReceiptUrl) {
+        await deleteReceiptImage(eventId)
+      }
       navigate(`/trips/${tripId}`, { state: backToTripState })
     } catch (err) {
       setError(err instanceof Error ? err.message : '更新に失敗しました')
@@ -245,6 +264,58 @@ export function EditEventPage() {
               step={1}
             />
           </label>
+          <div className="receipt-image-section">
+            <span className="receipt-image-label">予約明細画像</span>
+            {receiptPreviewUrl || (!removeReceipt && existingReceiptUrl) ? (
+              <div className="receipt-image-preview-wrapper">
+                <img
+                  src={receiptPreviewUrl || existingReceiptUrl!}
+                  alt="予約明細"
+                  className="receipt-image-preview"
+                  onClick={() => fileInputRef.current?.click()}
+                />
+                <button
+                  type="button"
+                  className="receipt-image-remove-btn"
+                  onClick={() => {
+                    setReceiptFile(null)
+                    if (receiptPreviewUrl) {
+                      URL.revokeObjectURL(receiptPreviewUrl)
+                    }
+                    setReceiptPreviewUrl(null)
+                    setRemoveReceipt(true)
+                  }}
+                >
+                  画像を削除
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="receipt-image-upload-area"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <span className="receipt-image-placeholder">タップして画像を選択</span>
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              capture="environment"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  setReceiptFile(file)
+                  if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl)
+                  setReceiptPreviewUrl(URL.createObjectURL(file))
+                  setRemoveReceipt(false)
+                }
+                e.target.value = ''
+              }}
+            />
+          </div>
           <div className="form-section">
             <label>
               予約
