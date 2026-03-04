@@ -44,5 +44,12 @@
     "vite": "^7.3.1",
     "vite-plugin-pwa": "^1.2.0",
     "vitest": "^4.0.18"
+  },
+  "pnpm": {
+    "overrides": {
+      "rollup": ">=4.59.0",
+      "minimatch@>=5.0.0 <5.1.8": ">=5.1.8",
+      "serialize-javascript@<=7.0.2": ">=7.0.3"
+    }
   }
 }
