@@ -14,6 +14,27 @@ export function useAuth() {
   const [isAllowed, setIsAllowed] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  async function checkAllowed(email: string): Promise<boolean> {
+    // #region agent log
+    debugLog('useAuth', 'checkAllowed called', { email })
+    // #endregion
+    const { data, error } = await supabase
+      .from('allowed_users')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle()
+
+    // #region agent log
+    debugLog('useAuth', 'checkAllowed result', {
+      hasError: !!error,
+      errorMsg: error?.message,
+      hasData: !!data,
+    })
+    // #endregion
+    if (error) return false
+    return !!data
+  }
+
   useEffect(() => {
     // #region agent log
     debugLog('useAuth', 'useEffect started', {})
@@ -77,27 +98,6 @@ export function useAuth() {
 
     return () => subscription.unsubscribe()
   }, [])
-
-  async function checkAllowed(email: string): Promise<boolean> {
-    // #region agent log
-    debugLog('useAuth', 'checkAllowed called', { email })
-    // #endregion
-    const { data, error } = await supabase
-      .from('allowed_users')
-      .select('email')
-      .eq('email', email)
-      .maybeSingle()
-
-    // #region agent log
-    debugLog('useAuth', 'checkAllowed result', {
-      hasError: !!error,
-      errorMsg: error?.message,
-      hasData: !!data,
-    })
-    // #endregion
-    if (error) return false
-    return !!data
-  }
 
   const signInWithGoogle = () => {
     return supabase.auth.signInWithOAuth({

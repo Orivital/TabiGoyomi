@@ -13,7 +13,6 @@ export function useCarousel(totalSlides: number, initialIndex = 0, enableInitial
     if (!container) return
 
     const boundedIndex = Math.max(0, Math.min(initialIndex, totalSlides - 1))
-    setActiveIndex(boundedIndex)
     container.scrollTo({ left: container.offsetWidth * boundedIndex, behavior: 'auto' })
     hasAppliedInitialPositionRef.current = true
   }, [enableInitialPositioning, initialIndex, totalSlides])

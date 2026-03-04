@@ -76,10 +76,7 @@ export function TripDetailPage() {
   useLayoutEffect(() => {
     if (isLoading || !isRestoringFocus) return
 
-    if (initialFocusIndex === 0) {
-      setIsRestoringFocus(false)
-      return
-    }
+    if (initialFocusIndex === 0) return
 
     scrollTo(initialFocusIndex, 'auto')
   }, [initialFocusIndex, isLoading, isRestoringFocus, scrollTo])
