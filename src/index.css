@@ -1033,6 +1033,71 @@ body.dev-mode {
   font-weight: 600;
 }
 
+/* 予約明細画像 */
+.receipt-image-section {
+  margin-bottom: 1rem;
+}
+
+.receipt-image-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.receipt-image-upload-area {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 120px;
+  border: 2px dashed var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.receipt-image-upload-area:hover {
+  border-color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.receipt-image-placeholder {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.receipt-image-preview-wrapper {
+  position: relative;
+}
+
+.receipt-image-preview {
+  display: block;
+  width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--color-bg);
+}
+
+.receipt-image-remove-btn {
+  display: block;
+  margin-top: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-error);
+  background: transparent;
+  border: 1px solid var(--color-error);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.receipt-image-remove-btn:hover {
+  background: color-mix(in srgb, var(--color-error) 8%, transparent);
+}
+
 @media (max-width: 480px) {
   .page {
     padding: 0.75rem;

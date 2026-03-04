@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
-import { createTripEvent, createTripDay, fetchTripDays } from '../lib/trips'
+import { createTripEvent, createTripDay, fetchTripDays, uploadReceiptImage } from '../lib/trips'
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput'
 import type { PlaceDetails } from '../lib/googleMaps'
 
@@ -29,7 +29,17 @@ export function NewEventPage() {
   const [googleMapsUrl, setGoogleMapsUrl] = useState('')
   const [showPlaceDetails, setShowPlaceDetails] = useState(true)
   const [isPlaceDetailsOpen, setIsPlaceDetailsOpen] = useState(false)
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    return () => {
+      if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [error, setError] = useState<string | null>(null)
   const [actualDayId, setActualDayId] = useState<string | null>(dayId || null)
 
@@ -92,7 +102,7 @@ export function NewEventPage() {
       setIsSubmitting(true)
       setError(null)
       const costNum = cost.trim() ? parseInt(cost, 10) : undefined
-      await createTripEvent({
+      const newEvent = await createTripEvent({
         trip_day_id: finalDayId,
         title: title.trim(),
         location: locationInput.trim() || undefined,
@@ -109,6 +119,9 @@ export function NewEventPage() {
         website_url: websiteUrl.trim() || undefined,
         google_maps_url: googleMapsUrl.trim() || undefined,
       })
+      if (receiptFile) {
+        await uploadReceiptImage(newEvent.id, receiptFile)
+      }
       navigate(`/trips/${tripId}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : '追加に失敗しました')
@@ -217,6 +230,54 @@ export function NewEventPage() {
               step={1}
             />
           </label>
+          <div className="receipt-image-section">
+            <span className="receipt-image-label">予約明細画像</span>
+            {receiptPreviewUrl ? (
+              <div className="receipt-image-preview-wrapper">
+                <img
+                  src={receiptPreviewUrl}
+                  alt="予約明細"
+                  className="receipt-image-preview"
+                  onClick={() => fileInputRef.current?.click()}
+                />
+                <button
+                  type="button"
+                  className="receipt-image-remove-btn"
+                  onClick={() => {
+                    setReceiptFile(null)
+                    if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl)
+                    setReceiptPreviewUrl(null)
+                  }}
+                >
+                  画像を削除
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="receipt-image-upload-area"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <span className="receipt-image-placeholder">タップして画像を選択</span>
+              </button>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              capture="environment"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  setReceiptFile(file)
+                  if (receiptPreviewUrl) URL.revokeObjectURL(receiptPreviewUrl)
+                  setReceiptPreviewUrl(URL.createObjectURL(file))
+                }
+                e.target.value = ''
+              }}
+            />
+          </div>
           <div className="form-section">
             <label>
               予約

@@ -350,7 +350,7 @@ export async function updateTripEvent(
   updates: Partial<
     Pick<
       TripEvent,
-      'title' | 'location' | 'start_time' | 'end_time' | 'description' | 'sort_order' | 'is_reserved' | 'is_settled' | 'is_reservation_not_needed' | 'cost' | 'phone' | 'address' | 'opening_hours' | 'website_url' | 'google_maps_url'
+      'title' | 'location' | 'start_time' | 'end_time' | 'description' | 'sort_order' | 'is_reserved' | 'is_settled' | 'is_reservation_not_needed' | 'cost' | 'phone' | 'address' | 'opening_hours' | 'website_url' | 'google_maps_url' | 'receipt_image_url'
     >
   >
 ) {
@@ -369,6 +369,65 @@ export async function updateTripEvent(
 }
 
 export async function deleteTripEvent(id: string) {
+  // ストレージから予約明細画像をクリーンアップ
+  await removeReceiptImageFile(id)
   const { error } = await supabase.from('trip_events').delete().eq('id', id)
   if (error) throw error
+}
+
+const RECEIPT_BUCKET = 'receipt-images'
+const RECEIPT_MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+
+export async function uploadReceiptImage(eventId: string, file: File) {
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new Error('JPEG、PNG、WebP のみアップロードできます')
+  }
+  if (file.size > RECEIPT_MAX_FILE_SIZE) {
+    throw new Error('ファイルサイズは10MB以下にしてください')
+  }
+
+  // 既存ファイルを削除
+  await removeReceiptImageFile(eventId)
+
+  const ext = EXTENSION_MAP[file.type] || 'jpg'
+  const filePath = `${eventId}/receipt.${ext}`
+
+  const { error: uploadError } = await supabase.storage
+    .from(RECEIPT_BUCKET)
+    .upload(filePath, file, { upsert: true })
+  if (uploadError) throw uploadError
+
+  const { data: urlData } = supabase.storage
+    .from(RECEIPT_BUCKET)
+    .getPublicUrl(filePath)
+
+  const { error: updateError } = await supabase
+    .from('trip_events')
+    .update({
+      receipt_image_url: urlData.publicUrl,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', eventId)
+  if (updateError) throw updateError
+
+  return urlData.publicUrl
+}
+
+export async function deleteReceiptImage(eventId: string) {
+  await removeReceiptImageFile(eventId)
+
+  const { error } = await supabase
+    .from('trip_events')
+    .update({
+      receipt_image_url: null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', eventId)
+  if (error) throw error
+}
+
+async function removeReceiptImageFile(eventId: string) {
+  const extensions = ['jpg', 'png', 'webp']
+  const paths = extensions.map((ext) => `${eventId}/receipt.${ext}`)
+  await supabase.storage.from(RECEIPT_BUCKET).remove(paths)
 }
