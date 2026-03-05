@@ -39,3 +39,13 @@ export type TripEvent = {
   created_at: string
   updated_at: string
 }
+
+export type TripChecklistItem = {
+  id: string
+  trip_id: string
+  title: string
+  is_checked: boolean
+  sort_order: number
+  created_at: string
+  updated_at: string
+}

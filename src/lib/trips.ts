@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Trip, TripDay, TripEvent } from '../types/database'
+import type { Trip, TripDay, TripEvent, TripChecklistItem } from '../types/database'
 
 export type TripDayWithEvents = TripDay & { trip_events: TripEvent[] }
 
@@ -430,4 +430,62 @@ async function removeReceiptImageFile(eventId: string) {
   const extensions = ['jpg', 'png', 'webp']
   const paths = extensions.map((ext) => `${eventId}/receipt.${ext}`)
   await supabase.storage.from(RECEIPT_BUCKET).remove(paths)
+}
+
+// チェックリスト
+
+export async function fetchChecklistItems(tripId: string) {
+  const { data, error } = await supabase
+    .from('trip_checklist_items')
+    .select('*')
+    .eq('trip_id', tripId)
+    .order('sort_order', { ascending: true })
+
+  if (error) throw error
+  return data as TripChecklistItem[]
+}
+
+export async function createChecklistItem(item: {
+  trip_id: string
+  title: string
+  sort_order?: number
+}) {
+  const { data, error } = await supabase
+    .from('trip_checklist_items')
+    .insert({
+      ...item,
+      sort_order: item.sort_order ?? 0,
+      updated_at: new Date().toISOString(),
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as TripChecklistItem
+}
+
+export async function updateChecklistItem(
+  id: string,
+  updates: Partial<Pick<TripChecklistItem, 'title' | 'is_checked' | 'sort_order'>>
+) {
+  const { data, error } = await supabase
+    .from('trip_checklist_items')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) throw error
+  return data as TripChecklistItem
+}
+
+export async function deleteChecklistItem(id: string) {
+  const { error } = await supabase
+    .from('trip_checklist_items')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
 }

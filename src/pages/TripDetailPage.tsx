@@ -4,6 +4,7 @@ import { formatDateWithWeekday, formatDateWithWeekdayWithoutYear, formatTimeWith
 import { useTripDetail } from '../hooks/useTripDetail'
 import { useCarousel } from '../hooks/useCarousel'
 import { DayIndicator } from '../components/DayIndicator'
+import { TripChecklist } from '../components/TripChecklist'
 import type { TripDetailLocationState } from '../types/navigation'
 
 type LocationState = {
@@ -139,6 +140,7 @@ export function TripDetailPage() {
 
   return (
     <div className="page">
+      <TripChecklist tripId={trip.id} />
       <header className="header">
         <Link to="/" className="back-link">← 一覧</Link>
         <h1>{trip.title}</h1>
