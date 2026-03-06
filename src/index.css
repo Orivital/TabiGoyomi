@@ -1305,6 +1305,10 @@ body.dev-mode {
     flex: 1;
     overflow-y: auto;
   }
+
+  .checklist-add-input {
+    font-size: 1rem;
+  }
 }
 
 @keyframes checklist-slide-up {
