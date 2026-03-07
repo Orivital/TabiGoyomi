@@ -23,13 +23,13 @@ case "$branch" in
       # リモート追跡ブランチの状態を更新
       git fetch --prune > /dev/null 2>&1 || true
 
-      # GitHub でマージ済みの PR ブランチ名を取得（squash merge 対応）
-      local MERGED_PR_BRANCHES=()
+      # GitHub でマージ済みの PR ブランチ名と HEAD OID を取得（squash merge 対応）
+      declare -A MERGED_PR_OIDS
       if command -v gh > /dev/null 2>&1; then
-        while IFS= read -r PR_BRANCH; do
+        while IFS=$'\t' read -r PR_BRANCH PR_OID; do
           [ -z "$PR_BRANCH" ] && continue
-          MERGED_PR_BRANCHES+=("$PR_BRANCH")
-        done < <(gh pr list --state merged --limit 50 --json headRefName --jq '.[].headRefName' 2>/dev/null || true)
+          MERGED_PR_OIDS["$PR_BRANCH"]="$PR_OID"
+        done < <(gh pr list --state merged --limit 50 --json headRefName,headRefOid --jq '.[] | "\(.headRefName)\t\(.headRefOid)"' 2>/dev/null || true)
       fi
 
       # 1) マージ済みローカルブランチを削除（merge commit で統合されたケース）
@@ -49,10 +49,12 @@ case "$branch" in
       done < <(git branch -vv 2>/dev/null | grep ': gone]' | grep -v "^\*" | awk '{print $1}' || true)
 
       # 3) GitHub PR マージ済みブランチをローカルから削除（squash/rebase merge 対応）
-      for PR_BRANCH in "${MERGED_PR_BRANCHES[@]}"; do
+      for PR_BRANCH in "${!MERGED_PR_OIDS[@]}"; do
         [ "$PR_BRANCH" = "$DEFAULT_BRANCH" ] && continue
         printf '%s\n' "${DELETED_LOCAL[@]}" | grep -qxF "$PR_BRANCH" && continue
-        if git show-ref --verify --quiet "refs/heads/$PR_BRANCH" 2>/dev/null; then
+        local LOCAL_TIP
+        LOCAL_TIP=$(git rev-parse "refs/heads/$PR_BRANCH" 2>/dev/null) || continue
+        if [ "$LOCAL_TIP" = "${MERGED_PR_OIDS[$PR_BRANCH]}" ]; then
           git branch -D "$PR_BRANCH" > /dev/null 2>&1 && DELETED_LOCAL+=("$PR_BRANCH")
         fi
       done
