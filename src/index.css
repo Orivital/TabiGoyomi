@@ -782,8 +782,49 @@ body.dev-mode {
   margin: 0 0 0.75rem;
 }
 
+.event-list li {
+  position: relative;
+}
+
+/* Railway connector between event cards */
+.event-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 0.25rem 0;
+  margin-left: -1rem;
+}
+
+/* Travel time label pinned to the right of the centered track */
+.event-connector > .travel-time-indicator {
+  position: absolute;
+  left: calc(50% + 0.5rem + 7px);
+}
+
+.event-connector-track {
+  --track-color: #b0b6be;
+  width: 14px;
+  min-height: 1.5rem;
+  flex-shrink: 0;
+  background:
+    /* Left rail */
+    linear-gradient(var(--track-color), var(--track-color)) 0 0 / 2px 100% no-repeat,
+    /* Right rail */
+    linear-gradient(var(--track-color), var(--track-color)) 12px 0 / 2px 100% no-repeat,
+    /* Cross ties */
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 5px,
+      var(--track-color) 5px,
+      var(--track-color) 7px,
+      transparent 7px,
+      transparent 12px
+    ) 0 0 / 14px 100% no-repeat;
+}
+
 .event-card {
-  margin-bottom: 0.5rem;
   position: relative;
   z-index: 2;
   background: var(--color-bg);
@@ -891,6 +932,55 @@ body.dev-mode {
 
 .btn-add-event:hover {
   background: rgba(37, 99, 235, 0.08);
+}
+
+/* Travel Time Indicator */
+.travel-time-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.travel-time-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.travel-time-mode {
+  white-space: nowrap;
+}
+
+.travel-time-loading {
+  gap: 0.25rem;
+}
+
+.travel-time-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-text-muted);
+  animation: travel-time-pulse 1.2s infinite ease-in-out;
+}
+
+.travel-time-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.travel-time-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes travel-time-pulse {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.2); }
 }
 
 /* Place Autocomplete */

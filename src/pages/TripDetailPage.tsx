@@ -3,8 +3,10 @@ import { useParams, Link, useLocation } from 'react-router-dom'
 import { formatDateWithWeekday, formatDateWithWeekdayWithoutYear, formatTimeWithoutSeconds, compareTimeStrings } from '../lib/dateFormat'
 import { useTripDetail } from '../hooks/useTripDetail'
 import { useCarousel } from '../hooks/useCarousel'
+import { useTravelTimes } from '../hooks/useTravelTimes'
 import { DayIndicator } from '../components/DayIndicator'
 import { TripChecklist } from '../components/TripChecklist'
+import { TravelTimeIndicator } from '../components/TravelTimeIndicator'
 import type { TripDetailLocationState } from '../types/navigation'
 
 type LocationState = {
@@ -167,80 +169,128 @@ export function TripDetailPage() {
           style={isRestoringFocus ? { visibility: 'hidden' } : undefined}
         >
           {daysInRange.map((day, index) => (
-            <section key={day.id} className="trip-day-slide" data-carousel-index={index}>
-              <h3 className="day-date">
-                <span>{index + 1}日目</span>
-                <span>{formatDateWithWeekdayWithoutYear(day.day_date)}</span>
-              </h3>
-              {day.memo && <p className="day-memo">{day.memo}</p>}
-              <ul className="event-list">
-                {day.events.map((event) => (
-                  <li key={event.id} className="event-card" data-event-id={event.id}>
-                    <Link
-                      to={`/trips/${trip.id}/events/${event.id}/edit`}
-                      className="event-card-link"
-                      state={{ focusDayDate: day.day_date } as TripDetailLocationState}
-                    >
-                      <div className="event-time">
-                        {event.start_time && event.end_time
-                          ? `${formatTimeWithoutSeconds(event.start_time)} - ${formatTimeWithoutSeconds(event.end_time)}`
-                          : formatTimeWithoutSeconds(event.start_time)}
-                      </div>
-                      <div className="event-content">
-                        <div className="event-title-row">
-                          <strong>{event.title}</strong>
-                          {event.cost != null && (
-                            <span className="event-cost">¥{event.cost.toLocaleString()}</span>
-                          )}
-                        </div>
-                        {(event.is_reserved || event.is_settled || event.is_reservation_not_needed) && (
-                          <div className="event-status-badges">
-                            {event.is_reserved && (
-                              <span className="event-badge event-badge-reserved">予約済み</span>
-                            )}
-                            {event.is_settled && (
-                              <span className="event-badge event-badge-settled">精算済み</span>
-                            )}
-                            {event.is_reservation_not_needed && (
-                              <span className="event-badge event-badge-not-needed">予約不要</span>
-                            )}
-                          </div>
-                        )}
-                        {event.location && (
-                          <span className="event-location">📍 {event.location}</span>
-                        )}
-                        {event.description && (
-                          <p className="event-description">{event.description}</p>
-                        )}
-                      </div>
-                    </Link>
-                    {(event.phone || event.google_maps_url || event.website_url) && (
-                      <div className="event-place-links">
-                        {event.phone && (
-                          <a href={`tel:${event.phone}`} className="event-place-link">📞 電話</a>
-                        )}
-                        {event.google_maps_url && (
-                          <a href={event.google_maps_url} target="_blank" rel="noopener noreferrer" className="event-place-link">🗺️ 地図</a>
-                        )}
-                        {event.website_url && (
-                          <a href={event.website_url} target="_blank" rel="noopener noreferrer" className="event-place-link">🌐 Web</a>
-                        )}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to={`/trips/${trip.id}/days/${day.id}/events/new`}
-                className="btn-add-event"
-                state={{ dayDate: day.day_date, isGenerated: day.isGenerated } as LocationState}
-              >
-                + 予定を追加
-              </Link>
-            </section>
+            <DaySlide
+              key={day.id}
+              day={day}
+              index={index}
+              tripId={trip.id}
+            />
           ))}
         </div>
       </main>
     </div>
+  )
+}
+
+type DaySlideDay = {
+  id: string
+  trip_id: string
+  day_date: string
+  memo: string | null
+  events: import('../types/database').TripEvent[]
+  isGenerated: boolean
+}
+
+type DaySlideProps = {
+  day: DaySlideDay
+  index: number
+  tripId: string
+}
+
+function DaySlide({ day, index, tripId }: DaySlideProps) {
+  const travelTimes = useTravelTimes(day.events)
+
+  return (
+    <section className="trip-day-slide" data-carousel-index={index}>
+      <h3 className="day-date">
+        <span>{index + 1}日目</span>
+        <span>{formatDateWithWeekdayWithoutYear(day.day_date)}</span>
+      </h3>
+      {day.memo && <p className="day-memo">{day.memo}</p>}
+      <ul className="event-list">
+        {day.events.map((event, eventIndex) => {
+          const travelTimePair = travelTimes.find(
+            (tt) => tt.toEventId === event.id
+          )
+          return (
+            <li key={event.id}>
+              {eventIndex > 0 && (
+                <div className="event-connector">
+                  <div className="event-connector-track" />
+                  {travelTimePair && (
+                    <TravelTimeIndicator
+                      travelTime={travelTimePair.travelTime}
+                      isLoading={travelTimePair.isLoading}
+                      mode={travelTimePair.mode}
+                      onModeChange={travelTimePair.setMode}
+                    />
+                  )}
+                </div>
+              )}
+              <div className="event-card" data-event-id={event.id}>
+                <Link
+                  to={`/trips/${tripId}/events/${event.id}/edit`}
+                  className="event-card-link"
+                  state={{ focusDayDate: day.day_date } as TripDetailLocationState}
+                >
+                  <div className="event-time">
+                    {event.start_time && event.end_time
+                      ? `${formatTimeWithoutSeconds(event.start_time)} - ${formatTimeWithoutSeconds(event.end_time)}`
+                      : formatTimeWithoutSeconds(event.start_time)}
+                  </div>
+                  <div className="event-content">
+                    <div className="event-title-row">
+                      <strong>{event.title}</strong>
+                      {event.cost != null && (
+                        <span className="event-cost">¥{event.cost.toLocaleString()}</span>
+                      )}
+                    </div>
+                    {(event.is_reserved || event.is_settled || event.is_reservation_not_needed) && (
+                      <div className="event-status-badges">
+                        {event.is_reserved && (
+                          <span className="event-badge event-badge-reserved">予約済み</span>
+                        )}
+                        {event.is_settled && (
+                          <span className="event-badge event-badge-settled">精算済み</span>
+                        )}
+                        {event.is_reservation_not_needed && (
+                          <span className="event-badge event-badge-not-needed">予約不要</span>
+                        )}
+                      </div>
+                    )}
+                    {event.location && (
+                      <span className="event-location">📍 {event.location}</span>
+                    )}
+                    {event.description && (
+                      <p className="event-description">{event.description}</p>
+                    )}
+                  </div>
+                </Link>
+                {(event.phone || event.google_maps_url || event.website_url) && (
+                  <div className="event-place-links">
+                    {event.phone && (
+                      <a href={`tel:${event.phone}`} className="event-place-link">📞 電話</a>
+                    )}
+                    {event.google_maps_url && (
+                      <a href={event.google_maps_url} target="_blank" rel="noopener noreferrer" className="event-place-link">🗺️ 地図</a>
+                    )}
+                    {event.website_url && (
+                      <a href={event.website_url} target="_blank" rel="noopener noreferrer" className="event-place-link">🌐 Web</a>
+                    )}
+                  </div>
+                )}
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+      <Link
+        to={`/trips/${tripId}/days/${day.id}/events/new`}
+        className="btn-add-event"
+        state={{ dayDate: day.day_date, isGenerated: day.isGenerated } as LocationState}
+      >
+        + 予定を追加
+      </Link>
+    </section>
   )
 }

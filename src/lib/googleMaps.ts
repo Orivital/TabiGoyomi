@@ -1,5 +1,19 @@
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader'
 
+export type TravelMode = 'walking' | 'transit' | 'driving'
+
+export const TRAVEL_MODES: TravelMode[] = ['walking', 'transit', 'driving']
+
+export function isValidTravelMode(value: string | null | undefined): value is TravelMode {
+  return value != null && TRAVEL_MODES.includes(value as TravelMode)
+}
+
+export type TravelTime = {
+  walking: number | null   // minutes
+  transit: number | null   // minutes
+  driving: number | null   // minutes
+}
+
 export type PlaceDetails = {
   name: string
   address: string | null
@@ -136,4 +150,84 @@ export async function getPlaceDetails(
     console.error('[GoogleMaps] getPlaceDetails error:', e)
     return null
   }
+}
+
+// Distance Matrix: travel time cache
+const travelTimeCache = new Map<string, TravelTime>()
+
+function travelTimeCacheKey(origin: string, destination: string, mode: TravelMode = 'transit'): string {
+  return `${origin}|${destination}|${mode}`
+}
+
+export function getCachedTravelTime(origin: string, destination: string, mode: TravelMode = 'transit'): TravelTime | undefined {
+  return travelTimeCache.get(travelTimeCacheKey(origin, destination, mode))
+}
+
+export function clearTravelTimeCache(): void {
+  travelTimeCache.clear()
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let distanceMatrixService: any = null
+
+async function getDistanceMatrixService() {
+  if (distanceMatrixService) return distanceMatrixService
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const routesLib = (await importLibrary('routes')) as any
+  distanceMatrixService = new routesLib.DistanceMatrixService()
+  return distanceMatrixService
+}
+
+async function fetchDuration(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  service: any,
+  origin: string,
+  destination: string,
+  travelMode: string,
+): Promise<number | null> {
+  try {
+    const result = await service.getDistanceMatrix({
+      origins: [origin],
+      destinations: [destination],
+      travelMode,
+    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const element = (result as any).rows?.[0]?.elements?.[0]
+    if (element?.status === 'OK' && element.duration) {
+      return Math.round(element.duration.value / 60)
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+const TRAVEL_MODE_MAP: Record<TravelMode, string> = {
+  walking: 'WALKING',
+  transit: 'TRANSIT',
+  driving: 'DRIVING',
+}
+
+export async function getTravelTime(
+  origin: string,
+  destination: string,
+  mode: TravelMode = 'transit',
+): Promise<TravelTime> {
+  const cacheKey = travelTimeCacheKey(origin, destination, mode)
+  const cached = travelTimeCache.get(cacheKey)
+  if (cached) return cached
+
+  await ensureLoaded()
+
+  const service = await getDistanceMatrixService()
+
+  const duration = await fetchDuration(service, origin, destination, TRAVEL_MODE_MAP[mode])
+
+  const travelTime: TravelTime = {
+    walking: mode === 'walking' ? duration : null,
+    transit: mode === 'transit' ? duration : null,
+    driving: mode === 'driving' ? duration : null,
+  }
+  travelTimeCache.set(cacheKey, travelTime)
+  return travelTime
 }
