@@ -31,6 +31,7 @@ export function EditEventPage() {
   const [receiptPreviewUrl, setReceiptPreviewUrl] = useState<string | null>(null)
   const [existingReceiptUrl, setExistingReceiptUrl] = useState<string | null>(null)
   const [removeReceipt, setRemoveReceipt] = useState(false)
+  const initialAddressRef = useRef('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -62,6 +63,7 @@ export function EditEventPage() {
         setIsReservationNotNeeded(event.is_reservation_not_needed ?? false)
         setPhone(event.phone ?? '')
         setAddress(event.address ?? '')
+        initialAddressRef.current = event.address ?? ''
         setOpeningHours(event.opening_hours ?? '')
         setWebsiteUrl(event.website_url ?? '')
         setGoogleMapsUrl(event.google_maps_url ?? '')
@@ -97,6 +99,7 @@ export function EditEventPage() {
       setIsSubmitting(true)
       setError(null)
       const costNum = cost.trim() ? parseInt(cost, 10) : null
+      const addressChanged = (address.trim() || null) !== (initialAddressRef.current.trim() || null)
       await updateTripEvent(eventId, {
         title: title.trim(),
         location: locationInput.trim() || undefined,
@@ -112,6 +115,8 @@ export function EditEventPage() {
         opening_hours: openingHours.trim() || null,
         website_url: websiteUrl.trim() || null,
         google_maps_url: googleMapsUrl.trim() || null,
+        // 住所変更時はキャッシュ済み移動時間をクリア（再取得させる）
+        ...(addressChanged ? { travel_duration_minutes: null } : {}),
       })
       // 予約明細画像の処理
       if (receiptFile) {

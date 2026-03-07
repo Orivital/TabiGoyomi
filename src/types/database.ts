@@ -37,6 +37,7 @@ export type TripEvent = {
   google_maps_url: string | null
   receipt_image_url: string | null
   travel_mode: import('../lib/googleMaps').TravelMode | null
+  travel_duration_minutes: number | null
   created_at: string
   updated_at: string
 }
