@@ -39,11 +39,13 @@ case "$branch" in
         git branch -d "$b" > /dev/null 2>&1 && DELETED_LOCAL+=("$b")
       done < <(git branch --merged "$DEFAULT_BRANCH" 2>/dev/null | grep -v "^\*" | grep -vE "^\s*(main|master)$" || true)
 
-      # 2) upstream が gone になったローカルブランチを削除
+      # 2) upstream が gone かつマージ済みのローカルブランチを削除
       while IFS= read -r b; do
         b="${b#"${b%%[! ]*}"}"
         [ -z "$b" ] && continue
-        git branch -D "$b" > /dev/null 2>&1 && DELETED_LOCAL+=("$b")
+        if git merge-base --is-ancestor "$b" "$DEFAULT_BRANCH" 2>/dev/null; then
+          git branch -d "$b" > /dev/null 2>&1 && DELETED_LOCAL+=("$b")
+        fi
       done < <(git branch -vv 2>/dev/null | grep ': gone]' | grep -v "^\*" | awk '{print $1}' || true)
 
       # 3) GitHub PR マージ済みブランチをローカルから削除（squash/rebase merge 対応）
