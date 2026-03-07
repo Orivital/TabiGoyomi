@@ -1,0 +1,24 @@
+{
+  "name": "TabiGoyomi",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers-extra/features/supabase-cli:1": {}
+  },
+  "forwardPorts": [5173, 54321, 54322, 54323],
+  "portsAttributes": {
+    "5173": { "label": "Vite Dev Server" },
+    "54321": { "label": "Supabase API" },
+    "54322": { "label": "Supabase Database" },
+    "54323": { "label": "Supabase Studio" }
+  },
+  "postCreateCommand": "corepack enable && pnpm install && git config core.hooksPath .githooks && chmod +x .githooks/*",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}
