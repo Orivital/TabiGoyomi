@@ -1,0 +1,29 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "ja-JP"
+early_access: false
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+    ignore:
+      - "pnpm-lock.yaml"
+      - "dist/**"
+  path_instructions:
+    - path: "src/**/*.{ts,tsx}"
+      instructions: |
+        React + TypeScript のコードです。
+        型安全性、hooks のルール、コンポーネント設計のベストプラクティスを確認してください。
+    - path: "supabase/migrations/**"
+      instructions: |
+        Supabase のデータベースマイグレーションファイルです。
+        SQL の安全性、RLS ポリシー、破壊的変更がないかを確認してください。
+    - path: "supabase/functions/**"
+      instructions: |
+        Supabase Edge Functions（Deno）のコードです。
+        エラーハンドリングとセキュリティを確認してください。
+chat:
+  auto_reply: true
