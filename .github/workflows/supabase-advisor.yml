@@ -14,7 +14,9 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          response=$(curl -sS -w "\n%{http_code}" \
+          response=$(curl -sS --connect-timeout 10 --max-time 60 \
+            --retry 3 --retry-delay 2 --retry-all-errors \
+            -w "\n%{http_code}" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             "https://api.supabase.com/v1/projects/fowxrnfttrnvogssaqef/advisors/security")
 
@@ -40,7 +42,9 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          response=$(curl -sS -w "\n%{http_code}" \
+          response=$(curl -sS --connect-timeout 10 --max-time 60 \
+            --retry 3 --retry-delay 2 --retry-all-errors \
+            -w "\n%{http_code}" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             "https://api.supabase.com/v1/projects/fowxrnfttrnvogssaqef/advisors/performance")
 
