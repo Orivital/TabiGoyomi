@@ -3,6 +3,7 @@ import { getTravelTime, getCachedTravelTime, isGoogleMapsAvailable, isValidTrave
 import type { TravelTime, TravelMode } from '../lib/googleMaps'
 import type { TripEvent } from '../types/database'
 import { updateTripEvent } from '../lib/trips'
+import { markSelfUpdate, clearSelfUpdate } from '../lib/realtimeSkipList'
 
 export type TravelTimePair = {
   fromEventId: string
@@ -102,7 +103,9 @@ export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
       return next
     })
     // Persist to DB (fire-and-forget)
+    markSelfUpdate(fromId)
     updateTripEvent(fromId, { travel_mode: mode }).catch(() => {
+      clearSelfUpdate(fromId)
       // Revert on failure
       setLocalModes((prev) => {
         const next = new Map(prev)

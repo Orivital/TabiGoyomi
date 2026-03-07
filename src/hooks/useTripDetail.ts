@@ -6,6 +6,7 @@ import {
   fetchTripEvents,
 } from '../lib/trips'
 import type { Trip, TripDay, TripEvent } from '../types/database'
+import { consumeSelfUpdate } from '../lib/realtimeSkipList'
 
 export type TripDayWithEvents = TripDay & { events: TripEvent[] }
 
@@ -67,7 +68,12 @@ export function useTripDetail(tripId: string | null) {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'trip_events' },
-        load
+        (payload) => {
+          // Skip reload for self-initiated travel_mode updates
+          const id = (payload.new as { id?: string })?.id
+          if (id && payload.eventType === 'UPDATE' && consumeSelfUpdate(id)) return
+          load()
+        }
       )
       .subscribe()
 
