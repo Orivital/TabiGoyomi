@@ -1,0 +1,87 @@
+#!/bin/bash
+# post-checkout: main/master ブランチに切り替えたとき自動で pull とブランチ整理を行う
+#
+# 引数:
+#   $1 = 前の HEAD
+#   $2 = 新しい HEAD
+#   $3 = 1(ブランチ切替) / 0(ファイルチェックアウト)
+
+# ブランチ切替でなければ何もしない
+[ "$3" = "1" ] || exit 0
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+case "$branch" in
+  main|master)
+    git pull --rebase
+
+    # マージ済みブランチを自動削除
+    cleanup_merged_branches() {
+      local DEFAULT_BRANCH="$branch"
+      local DELETED_LOCAL=()
+      local DELETED_REMOTE=()
+
+      # リモート追跡ブランチの状態を更新
+      git fetch --prune > /dev/null 2>&1 || true
+
+      # GitHub でマージ済みの PR ブランチ名を取得（squash merge 対応）
+      local MERGED_PR_BRANCHES=()
+      if command -v gh > /dev/null 2>&1; then
+        while IFS= read -r PR_BRANCH; do
+          [ -z "$PR_BRANCH" ] && continue
+          MERGED_PR_BRANCHES+=("$PR_BRANCH")
+        done < <(gh pr list --state merged --limit 50 --json headRefName --jq '.[].headRefName' 2>/dev/null || true)
+      fi
+
+      # 1) マージ済みローカルブランチを削除（merge commit で統合されたケース）
+      while IFS= read -r b; do
+        b="${b#"${b%%[! ]*}"}"
+        [ -z "$b" ] && continue
+        git branch -d "$b" > /dev/null 2>&1 && DELETED_LOCAL+=("$b")
+      done < <(git branch --merged "$DEFAULT_BRANCH" 2>/dev/null | grep -v "^\*" | grep -vE "^\s*(main|master)$" || true)
+
+      # 2) upstream が gone になったローカルブランチを削除
+      while IFS= read -r b; do
+        b="${b#"${b%%[! ]*}"}"
+        [ -z "$b" ] && continue
+        git branch -D "$b" > /dev/null 2>&1 && DELETED_LOCAL+=("$b")
+      done < <(git branch -vv 2>/dev/null | grep ': gone]' | grep -v "^\*" | awk '{print $1}' || true)
+
+      # 3) GitHub PR マージ済みブランチをローカルから削除（squash/rebase merge 対応）
+      for PR_BRANCH in "${MERGED_PR_BRANCHES[@]}"; do
+        [ "$PR_BRANCH" = "$DEFAULT_BRANCH" ] && continue
+        printf '%s\n' "${DELETED_LOCAL[@]}" | grep -qxF "$PR_BRANCH" && continue
+        if git show-ref --verify --quiet "refs/heads/$PR_BRANCH" 2>/dev/null; then
+          git branch -D "$PR_BRANCH" > /dev/null 2>&1 && DELETED_LOCAL+=("$PR_BRANCH")
+        fi
+      done
+
+      # 4) GitHub PR マージ済みブランチをリモートから削除
+      for PR_BRANCH in "${MERGED_PR_BRANCHES[@]}"; do
+        [ "$PR_BRANCH" = "$DEFAULT_BRANCH" ] && continue
+        printf '%s\n' "${DELETED_REMOTE[@]}" | grep -qxF "origin/$PR_BRANCH" && continue
+        if git show-ref --verify --quiet "refs/remotes/origin/$PR_BRANCH" 2>/dev/null; then
+          git push origin --delete "$PR_BRANCH" > /dev/null 2>&1 && DELETED_REMOTE+=("origin/$PR_BRANCH")
+        fi
+      done
+
+      # 5) マージ済みリモートブランチを削除（通常 merge のケース）
+      while IFS= read -r RBRANCH; do
+        RBRANCH="${RBRANCH#"${RBRANCH%%[! ]*}"}"
+        [ -z "$RBRANCH" ] && continue
+        local LOCAL_NAME="${RBRANCH#origin/}"
+        printf '%s\n' "${DELETED_REMOTE[@]}" | grep -qxF "origin/$LOCAL_NAME" && continue
+        git push origin --delete "$LOCAL_NAME" > /dev/null 2>&1 && DELETED_REMOTE+=("origin/$LOCAL_NAME")
+      done < <(git branch -r --merged "origin/$DEFAULT_BRANCH" 2>/dev/null | grep -v "origin/HEAD" | grep -vE "origin/(main|master)$" || true)
+
+      # 削除結果を出力
+      if [ ${#DELETED_LOCAL[@]} -gt 0 ] || [ ${#DELETED_REMOTE[@]} -gt 0 ]; then
+        echo "[auto-cleanup] マージ済みブランチを削除しました"
+        [ ${#DELETED_LOCAL[@]} -gt 0 ]  && echo "  ローカル: ${DELETED_LOCAL[*]}"
+        [ ${#DELETED_REMOTE[@]} -gt 0 ] && echo "  リモート: ${DELETED_REMOTE[*]}"
+      fi
+    }
+
+    cleanup_merged_branches
+    ;;
+esac
