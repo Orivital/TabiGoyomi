@@ -19,6 +19,7 @@ type EventPair = {
   toEventId: string
   originAddress: string
   destinationAddress: string
+  dbDurationMinutes: number | null
 }
 
 const DEFAULT_MODE: TravelMode = 'walking'
@@ -42,10 +43,19 @@ function buildPairs(events: TripEvent[]): EventPair[] {
         toEventId: to.id,
         originAddress: from.address,
         destinationAddress: to.address,
+        dbDurationMinutes: from.travel_duration_minutes,
       })
     }
   }
   return pairs
+}
+
+function buildTravelTimeFromDb(durationMinutes: number, mode: TravelMode): TravelTime {
+  return {
+    walking: mode === 'walking' ? durationMinutes : null,
+    transit: mode === 'transit' ? durationMinutes : null,
+    driving: mode === 'driving' ? durationMinutes : null,
+  }
 }
 
 export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
@@ -90,9 +100,18 @@ export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
       next.set(pairKey(fromId, toId), mode)
       return next
     })
-    // Persist to DB (fire-and-forget)
+    // Clear fetched result so it re-fetches with new mode
+    setFetchedResults((prev) => {
+      const next = new Map(prev)
+      // Remove all mode variants for this pair
+      for (const m of ['walking', 'transit', 'driving'] as TravelMode[]) {
+        next.delete(resultKey(fromId, toId, m))
+      }
+      return next
+    })
+    // Persist to DB (fire-and-forget): update mode and clear cached duration
     markSelfUpdate(fromId)
-    updateTripEvent(fromId, { travel_mode: mode }).catch(() => {
+    updateTripEvent(fromId, { travel_mode: mode, travel_duration_minutes: null }).catch(() => {
       clearSelfUpdate(fromId)
       // Revert on failure
       setLocalModes((prev) => {
@@ -107,7 +126,12 @@ export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
   useEffect(() => {
     const uncached = pairs.filter((p) => {
       const mode = modes.get(pairKey(p.fromEventId, p.toEventId)) ?? DEFAULT_MODE
-      return !getCachedTravelTime(p.originAddress, p.destinationAddress, mode)
+      // Skip if we have an in-memory cache hit
+      if (getCachedTravelTime(p.originAddress, p.destinationAddress, mode)) return false
+      // Skip if DB has a cached duration and mode hasn't been locally changed
+      const localMode = localModes.get(pairKey(p.fromEventId, p.toEventId))
+      if (p.dbDurationMinutes != null && !localMode) return false
+      return true
     })
     if (uncached.length === 0) return
 
@@ -128,19 +152,32 @@ export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
           const result = settled[i]
           if (result?.status === 'fulfilled') {
             next.set(resultKey(p.fromEventId, p.toEventId, mode), result.value)
+            // Persist duration to DB (fire-and-forget)
+            const duration = result.value[mode]
+            if (duration != null) {
+              markSelfUpdate(p.fromEventId)
+              updateTripEvent(p.fromEventId, { travel_duration_minutes: duration }).catch(() => {
+                clearSelfUpdate(p.fromEventId)
+              })
+            }
           }
         })
         return next
       })
     })
-  }, [pairs, modes])
+  }, [pairs, modes, localModes])
 
   return useMemo(() => {
     return pairs.map((p) => {
       const mode = modes.get(pairKey(p.fromEventId, p.toEventId)) ?? DEFAULT_MODE
       const cached = getCachedTravelTime(p.originAddress, p.destinationAddress, mode)
       const fetched = fetchedResults.get(resultKey(p.fromEventId, p.toEventId, mode))
-      const travelTime = cached ?? fetched ?? null
+      // Use DB cached duration if no in-memory or fetched result available
+      const localMode = localModes.get(pairKey(p.fromEventId, p.toEventId))
+      const dbTravelTime = p.dbDurationMinutes != null && !localMode
+        ? buildTravelTimeFromDb(p.dbDurationMinutes, mode)
+        : null
+      const travelTime = cached ?? fetched ?? dbTravelTime ?? null
       return {
         fromEventId: p.fromEventId,
         toEventId: p.toEventId,
@@ -150,5 +187,5 @@ export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
         setMode: (m: TravelMode) => setModeForPair(p.fromEventId, p.toEventId, m),
       }
     })
-  }, [pairs, fetchedResults, modes, setModeForPair])
+  }, [pairs, fetchedResults, modes, localModes, setModeForPair])
 }
