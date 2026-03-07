@@ -14,14 +14,23 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          response=$(curl -sf \
+          response=$(curl -sS -w "\n%{http_code}" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             "https://api.supabase.com/v1/projects/fowxrnfttrnvogssaqef/advisors/security")
 
-          echo "=== Security Advisors ==="
-          echo "$response" | jq -r '.lints[] | "[\(.level)] \(.title): \(.detail)"'
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
 
-          errors=$(echo "$response" | jq '[.lints[] | select(.level == "ERROR")] | length')
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "ERROR: Supabase API returned HTTP $http_code"
+            echo "$body"
+            exit 1
+          fi
+
+          echo "=== Security Advisors ==="
+          echo "$body" | jq -r '.lints[] | "[\(.level)] \(.title): \(.detail)"'
+
+          errors=$(echo "$body" | jq '[.lints[] | select(.level == "ERROR")] | length')
           if [ "$errors" -gt 0 ]; then
             echo "ERROR: $errors error-level security advisor(s) found."
             exit 1
@@ -31,14 +40,23 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
-          response=$(curl -sf \
+          response=$(curl -sS -w "\n%{http_code}" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             "https://api.supabase.com/v1/projects/fowxrnfttrnvogssaqef/advisors/performance")
 
-          echo "=== Performance Advisors ==="
-          echo "$response" | jq -r '.lints[] | "[\(.level)] \(.title): \(.detail)"'
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | sed '$d')
 
-          errors=$(echo "$response" | jq '[.lints[] | select(.level == "ERROR")] | length')
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "ERROR: Supabase API returned HTTP $http_code"
+            echo "$body"
+            exit 1
+          fi
+
+          echo "=== Performance Advisors ==="
+          echo "$body" | jq -r '.lints[] | "[\(.level)] \(.title): \(.detail)"'
+
+          errors=$(echo "$body" | jq '[.lints[] | select(.level == "ERROR")] | length')
           if [ "$errors" -gt 0 ]; then
             echo "ERROR: $errors error-level performance advisor(s) found."
             exit 1
