@@ -66,26 +66,14 @@ export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
   const [fetchedResults, setFetchedResults] = useState<Map<string, TravelTime>>(new Map())
   const generationRef = useRef(0)
 
-  // Clean up localModes entries that match DB (optimistic update confirmed)
-  useEffect(() => {
-    setLocalModes((prev) => {
-      let changed = false
-      const next = new Map(prev)
-      for (const [k, v] of prev) {
-        if (modesFromDb.get(k) === v) {
-          next.delete(k)
-          changed = true
-        }
-      }
-      return changed ? next : prev
-    })
-  }, [modesFromDb])
-
   // Merge: local overrides take precedence (for optimistic update)
+  // Skip local entries that already match DB (confirmed optimistic updates)
   const modes = useMemo(() => {
     const merged = new Map(modesFromDb)
     for (const [k, v] of localModes) {
-      merged.set(k, v)
+      if (modesFromDb.get(k) !== v) {
+        merged.set(k, v)
+      }
     }
     return merged
   }, [modesFromDb, localModes])
