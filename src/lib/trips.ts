@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import type { Trip, TripDay, TripEvent, TripChecklistItem } from '../types/database'
+import type { Trip, TripDay, TripEvent, TripChecklistItem, EventMemory } from '../types/database'
 
 export type TripDayWithEvents = TripDay & { trip_events: TripEvent[] }
 
@@ -129,6 +129,7 @@ export async function updateTrip(
 export async function deleteTrip(id: string) {
   // ストレージからサムネイルをクリーンアップ
   await removeTripThumbnailFile(id)
+  await removeTripMemoryFiles(id)
   const { error } = await supabase.from('trips').delete().eq('id', id)
   if (error) throw error
 }
@@ -369,7 +370,8 @@ export async function updateTripEvent(
 }
 
 export async function deleteTripEvent(id: string) {
-  // ストレージから予約明細画像をクリーンアップ
+  // ストレージからメディアファイルをクリーンアップ
+  await removeAllEventMemoryFiles(id)
   await removeReceiptImageFile(id)
   const { error } = await supabase.from('trip_events').delete().eq('id', id)
   if (error) throw error
@@ -488,4 +490,145 @@ export async function deleteChecklistItem(id: string) {
     .delete()
     .eq('id', id)
   if (error) throw error
+}
+
+// イベント思い出
+
+const MEMORIES_BUCKET = 'event-memories'
+const MEMORIES_MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const MEMORIES_ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MEMORIES_ALLOWED_VIDEO_TYPES = ['video/mp4']
+
+const MEMORIES_EXTENSION_MAP: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'video/mp4': 'mp4',
+}
+
+export async function fetchTripMemories(tripId: string): Promise<EventMemory[]> {
+  const { data, error } = await supabase
+    .from('event_memories')
+    .select('*')
+    .eq('trip_id', tripId)
+    .order('sort_order', { ascending: true })
+
+  if (error) throw error
+  return sortEventMemories(data as EventMemory[])
+}
+
+export async function uploadEventMemory(tripId: string, file: File): Promise<EventMemory> {
+  const allAllowedTypes = [...MEMORIES_ALLOWED_IMAGE_TYPES, ...MEMORIES_ALLOWED_VIDEO_TYPES]
+  if (!allAllowedTypes.includes(file.type)) {
+    throw new Error('JPEG、PNG、WebP、MP4 のみアップロードできます')
+  }
+  if (file.size > MEMORIES_MAX_FILE_SIZE) {
+    throw new Error('ファイルサイズは10MB以下にしてください')
+  }
+
+  const ext = MEMORIES_EXTENSION_MAP[file.type] || 'bin'
+  const fileId = crypto.randomUUID()
+  const filePath = `${tripId}/${fileId}.${ext}`
+
+  const { error: uploadError } = await supabase.storage
+    .from(MEMORIES_BUCKET)
+    .upload(filePath, file)
+  if (uploadError) throw uploadError
+
+  const { data: urlData } = supabase.storage
+    .from(MEMORIES_BUCKET)
+    .getPublicUrl(filePath)
+
+  try {
+    const fileType = MEMORIES_ALLOWED_VIDEO_TYPES.includes(file.type) ? 'video' : 'image'
+    const { data: lastMemory, error: sortOrderError } = await supabase
+      .from('event_memories')
+      .select('sort_order')
+      .eq('trip_id', tripId)
+      .order('sort_order', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (sortOrderError) throw sortOrderError
+    const nextSortOrder = ((lastMemory as Pick<EventMemory, 'sort_order'> | null)?.sort_order ?? -1) + 1
+
+    const { data, error } = await supabase
+      .from('event_memories')
+      .insert({
+        trip_id: tripId,
+        file_url: urlData.publicUrl,
+        file_type: fileType,
+        sort_order: nextSortOrder,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+    return data as EventMemory
+  } catch (error) {
+    await removeMemoryObject(filePath)
+    throw error
+  }
+}
+
+export async function deleteEventMemory(memoryId: string): Promise<void> {
+  // レコードを取得してファイルパスを特定
+  const { data: memory, error: fetchError } = await supabase
+    .from('event_memories')
+    .select('*')
+    .eq('id', memoryId)
+    .single()
+  if (fetchError) throw fetchError
+
+  const m = memory as EventMemory
+  const { error } = await supabase.from('event_memories').delete().eq('id', memoryId)
+  if (error) throw error
+
+  const bucketPath = getMemoryObjectPath(m.file_url)
+  if (bucketPath) {
+    await removeMemoryObject(bucketPath)
+  }
+}
+
+async function removeAllEventMemoryFiles(eventId: string): Promise<void> {
+  const { data: memories } = await supabase
+    .from('event_memories')
+    .select('file_url')
+    .eq('trip_id', eventId)
+
+  if (memories && memories.length > 0) {
+    const paths = (memories as Pick<EventMemory, 'file_url'>[])
+      .map((m) => getMemoryObjectPath(m.file_url))
+      .filter((p): p is string => !!p)
+
+    if (paths.length > 0) {
+      await supabase.storage.from(MEMORIES_BUCKET).remove(paths)
+    }
+  }
+
+  // レコードは CASCADE で削除されるが、旅行削除前に呼ばれるので明示削除
+  await supabase.from('event_memories').delete().eq('trip_id', eventId)
+}
+
+function sortEventMemories(memories: EventMemory[]): EventMemory[] {
+  return [...memories].sort((a, b) => {
+    if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
+    return a.created_at.localeCompare(b.created_at)
+  })
+}
+
+async function removeTripMemoryFiles(tripId: string): Promise<void> {
+  await removeAllEventMemoryFiles(tripId)
+}
+
+function getMemoryObjectPath(fileUrl: string): string | null {
+  return fileUrl.split(`/${MEMORIES_BUCKET}/`).pop() ?? null
+}
+
+async function removeMemoryObject(path: string): Promise<void> {
+  const { error } = await supabase.storage.from(MEMORIES_BUCKET).remove([path])
+  if (error) {
+    console.error('Failed to remove memory object from storage', { path, error })
+  }
 }

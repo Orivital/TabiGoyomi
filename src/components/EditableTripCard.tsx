@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   updateTrip,
   deleteTrip,
@@ -35,6 +35,7 @@ function generateDateRange(start: string, end: string): string[] {
 }
 
 export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
+  const navigate = useNavigate()
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(trip.title)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -443,6 +444,19 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
         )}
         <div className="trip-card-title-row">
           <h3>{trip.title}</h3>
+          <button
+            type="button"
+            className="trip-card-memories-btn"
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              navigate(`/trips/${trip.id}/memories`)
+            }}
+            title="思い出"
+            aria-label="思い出"
+          >
+            📷
+          </button>
           <div className="trip-card-actions">
             {isConfirmingDelete ? (
               <>
