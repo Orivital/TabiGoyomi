@@ -42,6 +42,16 @@ export type TripEvent = {
   updated_at: string
 }
 
+export type EventMemory = {
+  id: string
+  trip_id: string
+  file_url: string
+  file_type: 'image' | 'video'
+  sort_order: number
+  created_at: string
+  updated_at: string
+}
+
 export type TripChecklistItem = {
   id: string
   trip_id: string
