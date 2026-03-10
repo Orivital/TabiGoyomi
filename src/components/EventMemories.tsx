@@ -8,12 +8,27 @@ type Props = {
 
 export function EventMemories({ tripId }: Props) {
   const [memories, setMemories] = useState<EventMemory[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    fetchTripMemories(tripId).then(setMemories).catch(() => {})
+    let stale = false
+    setMemories([])
+    setError(null)
+    setIsLoading(true)
+    fetchTripMemories(tripId)
+      .then((data) => {
+        if (!stale) setMemories(data)
+      })
+      .catch((err) => {
+        if (!stale) setError(err instanceof Error ? err.message : '読み込みに失敗しました')
+      })
+      .finally(() => {
+        if (!stale) setIsLoading(false)
+      })
+    return () => { stale = true }
   }, [tripId])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -50,6 +65,7 @@ export function EventMemories({ tripId }: Props) {
     <div className="event-memories-section">
       <span className="event-memories-label">思い出</span>
       {error && <p className="error">{error}</p>}
+      {isLoading && <p className="event-memories-loading">読み込み中...</p>}
       <div className="event-memories-grid">
         {memories.map((memory) => (
           <div key={memory.id} className="event-memory-item">
