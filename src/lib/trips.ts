@@ -511,6 +511,7 @@ export async function fetchTripMemories(tripId: string): Promise<EventMemory[]> 
     .select('*')
     .eq('trip_id', tripId)
     .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true })
 
   if (error) throw error
   return sortEventMemories(data as EventMemory[])
@@ -540,31 +541,22 @@ export async function uploadEventMemory(tripId: string, file: File): Promise<Eve
 
   try {
     const fileType = MEMORIES_ALLOWED_VIDEO_TYPES.includes(file.type) ? 'video' : 'image'
-    const { data: lastMemory, error: sortOrderError } = await supabase
-      .from('event_memories')
-      .select('sort_order')
-      .eq('trip_id', tripId)
-      .order('sort_order', { ascending: false })
-      .limit(1)
-      .maybeSingle()
 
-    if (sortOrderError) throw sortOrderError
-    const nextSortOrder = ((lastMemory as Pick<EventMemory, 'sort_order'> | null)?.sort_order ?? -1) + 1
-
-    const { data, error } = await supabase
-      .from('event_memories')
-      .insert({
-        trip_id: tripId,
-        file_url: urlData.publicUrl,
-        file_type: fileType,
-        sort_order: nextSortOrder,
-        updated_at: new Date().toISOString(),
-      })
-      .select()
-      .single()
+    const { data, error } = await supabase.rpc('insert_event_memory', {
+      p_trip_id: tripId,
+      p_file_url: urlData.publicUrl,
+      p_file_type: fileType,
+      p_updated_at: new Date().toISOString(),
+    })
 
     if (error) throw error
-    return data as EventMemory
+
+    const insertedMemory = Array.isArray(data) ? data[0] : data
+    if (!insertedMemory) {
+      throw new Error('メモリレコードの作成に失敗しました')
+    }
+
+    return insertedMemory as EventMemory
   } catch (error) {
     await removeMemoryObject(filePath)
     throw error
@@ -617,7 +609,9 @@ async function removeAllEventMemoryFiles(eventId: string): Promise<void> {
 function sortEventMemories(memories: EventMemory[]): EventMemory[] {
   return [...memories].sort((a, b) => {
     if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order
-    return a.created_at.localeCompare(b.created_at)
+    const createdAtCompare = a.created_at.localeCompare(b.created_at)
+    if (createdAtCompare !== 0) return createdAtCompare
+    return a.id.localeCompare(b.id)
   })
 }
 
