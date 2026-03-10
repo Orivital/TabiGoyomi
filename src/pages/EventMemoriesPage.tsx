@@ -13,10 +13,21 @@ export function EventMemoriesPage() {
 
   useEffect(() => {
     if (!tripId) return
+    let stale = false
+    setMemories([])
+    setError(null)
+    setIsLoading(true)
     fetchTripMemories(tripId)
-      .then(setMemories)
-      .catch((err) => setError(err instanceof Error ? err.message : '読み込みに失敗しました'))
-      .finally(() => setIsLoading(false))
+      .then((data) => {
+        if (!stale) setMemories(data)
+      })
+      .catch((err) => {
+        if (!stale) setError(err instanceof Error ? err.message : '読み込みに失敗しました')
+      })
+      .finally(() => {
+        if (!stale) setIsLoading(false)
+      })
+    return () => { stale = true }
   }, [tripId])
 
   const handleUploadClick = () => {
