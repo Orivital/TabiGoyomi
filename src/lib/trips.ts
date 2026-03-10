@@ -127,11 +127,11 @@ export async function updateTrip(
 }
 
 export async function deleteTrip(id: string) {
-  // ストレージからサムネイルをクリーンアップ
-  await removeTripThumbnailFile(id)
-  await removeTripMemoryFiles(id)
   const { error } = await supabase.from('trips').delete().eq('id', id)
   if (error) throw error
+  // DB削除成功後にストレージをクリーンアップ
+  await removeTripThumbnailFile(id)
+  await removeTripMemoryFiles(id)
 }
 
 const THUMBNAIL_BUCKET = 'trip-thumbnails'
