@@ -591,23 +591,27 @@ export async function deleteEventMemory(memoryId: string): Promise<void> {
 }
 
 async function removeAllEventMemoryFiles(eventId: string): Promise<void> {
-  const { data: memories } = await supabase
+  const { data: memories, error: selectError } = await supabase
     .from('event_memories')
     .select('file_url')
     .eq('trip_id', eventId)
 
-  if (memories && memories.length > 0) {
+  if (selectError) throw selectError
+
+  if (memories.length > 0) {
     const paths = (memories as Pick<EventMemory, 'file_url'>[])
       .map((m) => getMemoryObjectPath(m.file_url))
       .filter((p): p is string => !!p)
 
     if (paths.length > 0) {
-      await supabase.storage.from(MEMORIES_BUCKET).remove(paths)
+      const { error: storageError } = await supabase.storage.from(MEMORIES_BUCKET).remove(paths)
+      if (storageError) throw storageError
     }
   }
 
   // レコードは CASCADE で削除されるが、旅行削除前に呼ばれるので明示削除
-  await supabase.from('event_memories').delete().eq('trip_id', eventId)
+  const { error: deleteError } = await supabase.from('event_memories').delete().eq('trip_id', eventId)
+  if (deleteError) throw deleteError
 }
 
 function sortEventMemories(memories: EventMemory[]): EventMemory[] {
