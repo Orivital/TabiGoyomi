@@ -105,6 +105,7 @@ export function EventMemories({ tripId }: Props) {
               type="button"
               className="event-memory-remove-btn"
               onClick={() => handleDelete(memory.id)}
+              aria-label={`思い出 ${memory.id} を削除`}
             >
               ✕
             </button>
@@ -115,6 +116,7 @@ export function EventMemories({ tripId }: Props) {
           className="event-memory-add-btn"
           onClick={() => fileInputRef.current?.click()}
           disabled={isAddDisabled}
+          aria-label="思い出を追加"
         >
           {isUploading ? '...' : '+'}
         </button>
