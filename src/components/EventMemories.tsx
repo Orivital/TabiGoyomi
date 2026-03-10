@@ -9,9 +9,17 @@ type Props = {
 export function EventMemories({ tripId }: Props) {
   const [memories, setMemories] = useState<EventMemory[]>([])
   const [loadedTripId, setLoadedTripId] = useState<string | null>(null)
-  const [isUploading, setIsUploading] = useState(false)
+  const [uploadingTripId, setUploadingTripId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const activeTripIdRef = useRef(tripId)
+
+  useEffect(() => {
+    activeTripIdRef.current = tripId
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [tripId])
 
   useEffect(() => {
     let stale = false
@@ -32,6 +40,7 @@ export function EventMemories({ tripId }: Props) {
   }, [tripId])
 
   const isLoading = loadedTripId !== tripId
+  const isUploading = uploadingTripId === tripId
   const isAddDisabled = isLoading || isUploading
   const visibleMemories = isLoading ? [] : memories
   const visibleError = isLoading ? null : error
@@ -45,26 +54,29 @@ export function EventMemories({ tripId }: Props) {
     const files = e.target.files
     if (!files || files.length === 0) return
 
-    setIsUploading(true)
+    const currentTripId = tripId
+    setUploadingTripId(currentTripId)
     setError(null)
     const newMemories: EventMemory[] = []
     const errors: string[] = []
     for (const file of Array.from(files)) {
       try {
-        const memory = await uploadEventMemory(tripId, file)
+        const memory = await uploadEventMemory(currentTripId, file)
         newMemories.push(memory)
       } catch (err) {
         errors.push(`${file.name}: ${err instanceof Error ? err.message : 'アップロードに失敗しました'}`)
       }
     }
-    if (newMemories.length > 0) {
+    if (activeTripIdRef.current === currentTripId && newMemories.length > 0) {
       setMemories((prev) => [...prev, ...newMemories])
     }
-    if (errors.length > 0) {
+    if (activeTripIdRef.current === currentTripId && errors.length > 0) {
       setError(errors.join('\n'))
     }
-    setIsUploading(false)
-    e.target.value = ''
+    if (activeTripIdRef.current === currentTripId) {
+      setUploadingTripId(null)
+      e.target.value = ''
+    }
   }
 
   const handleDelete = async (memoryId: string) => {
