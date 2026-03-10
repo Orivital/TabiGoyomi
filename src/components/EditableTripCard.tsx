@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   updateTrip,
   deleteTrip,
@@ -35,7 +35,6 @@ function generateDateRange(start: string, end: string): string[] {
 }
 
 export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
-  const navigate = useNavigate()
   const [isEditing, setIsEditing] = useState(false)
   const [title, setTitle] = useState(trip.title)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -73,9 +72,7 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
     onDateChange: () => setError(null),
   })
 
-  const handleEditClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleEditClick = () => {
     setIsEditing(true)
     setTitle(trip.title)
     setStartDate(trip.start_date)
@@ -90,9 +87,7 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
     setPendingSave(null)
   }
 
-  const handleCancel = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleCancel = () => {
     setIsEditing(false)
     setThumbnailFile(null)
     setThumbnailPreview(null)
@@ -104,15 +99,11 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
     setPendingSave(null)
   }
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleDeleteClick = () => {
     setIsConfirmingDelete(true)
   }
 
-  const handleDeleteConfirm = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleDeleteConfirm = async () => {
     try {
       setIsSubmitting(true)
       setError(null)
@@ -126,9 +117,7 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
     }
   }
 
-  const handleDeleteCancel = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleDeleteCancel = () => {
     setIsConfirmingDelete(false)
   }
 
@@ -143,9 +132,7 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
     setThumbnailPreview(URL.createObjectURL(file))
   }
 
-  const handleRemoveThumbnail = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleRemoveThumbnail = () => {
     setThumbnailFile(null)
     if (thumbnailPreview?.startsWith('blob:')) {
       URL.revokeObjectURL(thumbnailPreview)
@@ -159,7 +146,6 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    e.stopPropagation()
     if (!title.trim() || !startDate || !endDate) return
     try {
       setIsSubmitting(true)
@@ -444,67 +430,62 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
         )}
         <div className="trip-card-title-row">
           <h3>{trip.title}</h3>
-          <button
-            type="button"
-            className="trip-card-memories-btn"
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              navigate(`/trips/${trip.id}/memories`)
-            }}
-            title="思い出"
-            aria-label="思い出"
-          >
-            📷
-          </button>
-          <div className="trip-card-actions">
-            {isConfirmingDelete ? (
-              <>
-                <span className="trip-card-delete-confirm-label">削除しますか？</span>
-                <button
-                  type="button"
-                  className="trip-card-delete-confirm-btn"
-                  onClick={handleDeleteConfirm}
-                  disabled={isSubmitting}
-                  title="削除を実行"
-                  aria-label="削除を実行"
-                >
-                  {isSubmitting ? '削除中...' : 'はい'}
-                </button>
-                <button
-                  type="button"
-                  className="trip-card-delete-cancel-btn"
-                  onClick={handleDeleteCancel}
-                  disabled={isSubmitting}
-                  title="キャンセル"
-                  aria-label="キャンセル"
-                >
-                  いいえ
-                </button>
-              </>
-            ) : (
-              <button
-                type="button"
-                className="trip-card-delete-btn"
-                onClick={handleDeleteClick}
-                title="削除"
-                aria-label="削除"
-                disabled={isSubmitting}
-              >
-                削除
-              </button>
-            )}
+        </div>
+      </Link>
+      <div className="trip-card-actions">
+        {isConfirmingDelete ? (
+          <>
+            <span className="trip-card-delete-confirm-label">削除しますか？</span>
             <button
               type="button"
-              className="trip-card-edit-btn"
-              onClick={handleEditClick}
-              title="編集"
-              aria-label="編集"
+              className="trip-card-delete-confirm-btn"
+              onClick={handleDeleteConfirm}
+              disabled={isSubmitting}
+              title="削除を実行"
+              aria-label="削除を実行"
             >
-              編集
+              {isSubmitting ? '削除中...' : 'はい'}
             </button>
-          </div>
-        </div>
+            <button
+              type="button"
+              className="trip-card-delete-cancel-btn"
+              onClick={handleDeleteCancel}
+              disabled={isSubmitting}
+              title="キャンセル"
+              aria-label="キャンセル"
+            >
+              いいえ
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            className="trip-card-delete-btn"
+            onClick={handleDeleteClick}
+            title="削除"
+            aria-label="削除"
+            disabled={isSubmitting}
+          >
+            削除
+          </button>
+        )}
+        <button
+          type="button"
+          className="trip-card-edit-btn"
+          onClick={handleEditClick}
+          title="編集"
+          aria-label="編集"
+        >
+          編集
+        </button>
+      </div>
+      <Link
+        to={`/trips/${trip.id}/memories`}
+        className="trip-card-memories-btn"
+        title="思い出"
+        aria-label="思い出"
+      >
+        📷
       </Link>
     </div>
   )
