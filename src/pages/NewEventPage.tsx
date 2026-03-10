@@ -7,7 +7,6 @@ import type { TripDetailLocationState } from '../types/navigation'
 
 type LocationState = {
   dayDate?: string
-  isGenerated?: boolean
 }
 
 export function NewEventPage() {

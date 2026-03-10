@@ -11,7 +11,6 @@ import type { TripDetailLocationState } from '../types/navigation'
 
 type LocationState = {
   dayDate: string
-  isGenerated: boolean
 }
 
 export function TripDetailPage() {
@@ -287,7 +286,7 @@ function DaySlide({ day, index, tripId }: DaySlideProps) {
       <Link
         to={`/trips/${tripId}/days/${day.id}/events/new`}
         className="btn-add-event"
-        state={{ dayDate: day.day_date, isGenerated: day.isGenerated } as LocationState}
+        state={{ dayDate: day.day_date } as LocationState}
       >
         + 予定を追加
       </Link>
