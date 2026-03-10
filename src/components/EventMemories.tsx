@@ -37,19 +37,24 @@ export function EventMemories({ tripId }: Props) {
 
     setIsUploading(true)
     setError(null)
-    try {
-      const newMemories: EventMemory[] = []
-      for (const file of Array.from(files)) {
+    const newMemories: EventMemory[] = []
+    const errors: string[] = []
+    for (const file of Array.from(files)) {
+      try {
         const memory = await uploadEventMemory(tripId, file)
         newMemories.push(memory)
+      } catch (err) {
+        errors.push(`${file.name}: ${err instanceof Error ? err.message : 'アップロードに失敗しました'}`)
       }
-      setMemories((prev) => [...prev, ...newMemories])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'アップロードに失敗しました')
-    } finally {
-      setIsUploading(false)
-      e.target.value = ''
     }
+    if (newMemories.length > 0) {
+      setMemories((prev) => [...prev, ...newMemories])
+    }
+    if (errors.length > 0) {
+      setError(errors.join('\n'))
+    }
+    setIsUploading(false)
+    e.target.value = ''
   }
 
   const handleDelete = async (memoryId: string) => {
