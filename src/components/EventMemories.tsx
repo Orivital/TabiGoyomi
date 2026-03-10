@@ -8,28 +8,32 @@ type Props = {
 
 export function EventMemories({ tripId }: Props) {
   const [memories, setMemories] = useState<EventMemory[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [loadedTripId, setLoadedTripId] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     let stale = false
-    setMemories([])
-    setError(null)
-    setIsLoading(true)
     fetchTripMemories(tripId)
       .then((data) => {
-        if (!stale) setMemories(data)
+        if (stale) return
+        setMemories(data)
+        setError(null)
+        setLoadedTripId(tripId)
       })
       .catch((err) => {
-        if (!stale) setError(err instanceof Error ? err.message : '読み込みに失敗しました')
-      })
-      .finally(() => {
-        if (!stale) setIsLoading(false)
+        if (stale) return
+        setMemories([])
+        setError(err instanceof Error ? err.message : '読み込みに失敗しました')
+        setLoadedTripId(tripId)
       })
     return () => { stale = true }
   }, [tripId])
+
+  const isLoading = loadedTripId !== tripId
+  const visibleMemories = isLoading ? [] : memories
+  const visibleError = isLoading ? null : error
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -69,10 +73,10 @@ export function EventMemories({ tripId }: Props) {
   return (
     <div className="event-memories-section">
       <span className="event-memories-label">思い出</span>
-      {error && <p className="error">{error}</p>}
+      {visibleError && <p className="error">{visibleError}</p>}
       {isLoading && <p className="event-memories-loading">読み込み中...</p>}
       <div className="event-memories-grid">
-        {memories.map((memory) => (
+        {visibleMemories.map((memory) => (
           <div key={memory.id} className="event-memory-item">
             {memory.file_type === 'video' ? (
               <video src={memory.file_url} controls playsInline />
