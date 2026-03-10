@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { createTripEvent, createTripDay, fetchTripDays, uploadReceiptImage } from '../lib/trips'
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput'
 import type { PlaceDetails } from '../lib/googleMaps'
+import type { TripDetailLocationState } from '../types/navigation'
 
 type LocationState = {
   dayDate?: string
@@ -42,12 +43,15 @@ export function NewEventPage() {
   }, [])
   const [error, setError] = useState<string | null>(null)
   const [actualDayId, setActualDayId] = useState<string | null>(dayId || null)
+  const state = location.state as LocationState | null
+  const dayDate = state?.dayDate ?? (dayId?.startsWith('generated-') ? dayId.replace('generated-', '') : null)
 
-  // dayDateをuseMemoで計算して依存配列を最適化
-  const dayDate = useMemo(() => {
-    const state = location.state as LocationState | null
-    return state?.dayDate || (dayId?.startsWith('generated-') ? dayId.replace('generated-', '') : null)
-  }, [location.state, dayId])
+  const createTripDetailState = (focusEventId?: string): TripDetailLocationState | undefined => {
+    if (!dayDate) return undefined
+    return focusEventId
+      ? { focusDayDate: dayDate, focusEventId }
+      : { focusDayDate: dayDate }
+  }
 
   // 生成された日の場合は、先にtrip_dayを作成
   useEffect(() => {
@@ -122,7 +126,9 @@ export function NewEventPage() {
       if (receiptFile) {
         await uploadReceiptImage(newEvent.id, receiptFile)
       }
-      navigate(`/trips/${tripId}`)
+      navigate(`/trips/${tripId}`, {
+        state: createTripDetailState(newEvent.id),
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : '追加に失敗しました')
     } finally {
@@ -133,7 +139,7 @@ export function NewEventPage() {
   return (
     <div className="page">
       <header className="header">
-        <Link to={`/trips/${tripId}`} className="back-link">← 戻る</Link>
+        <Link to={`/trips/${tripId}`} state={createTripDetailState()} className="back-link">← 戻る</Link>
         <h1>予定を追加</h1>
       </header>
 
