@@ -371,7 +371,6 @@ export async function updateTripEvent(
 
 export async function deleteTripEvent(id: string) {
   // ストレージからメディアファイルをクリーンアップ
-  await removeAllEventMemoryFiles(id)
   await removeReceiptImageFile(id)
   const { error } = await supabase.from('trip_events').delete().eq('id', id)
   if (error) throw error
