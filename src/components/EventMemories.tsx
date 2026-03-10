@@ -32,10 +32,16 @@ export function EventMemories({ tripId }: Props) {
   }, [tripId])
 
   const isLoading = loadedTripId !== tripId
+  const isAddDisabled = isLoading || isUploading
   const visibleMemories = isLoading ? [] : memories
   const visibleError = isLoading ? null : error
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isAddDisabled) {
+      e.target.value = ''
+      return
+    }
+
     const files = e.target.files
     if (!files || files.length === 0) return
 
@@ -96,7 +102,7 @@ export function EventMemories({ tripId }: Props) {
           type="button"
           className="event-memory-add-btn"
           onClick={() => fileInputRef.current?.click()}
-          disabled={isUploading}
+          disabled={isAddDisabled}
         >
           {isUploading ? '...' : '+'}
         </button>
@@ -107,6 +113,7 @@ export function EventMemories({ tripId }: Props) {
         type="file"
         multiple
         accept="image/jpeg,image/png,image/webp,video/mp4"
+        disabled={isAddDisabled}
         style={{ display: 'none' }}
         onChange={handleFileChange}
       />
