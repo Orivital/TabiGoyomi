@@ -18,7 +18,7 @@ export function TripChecklist({ tripId }: Props) {
     if (isOpen === null && !isLoading) {
       setIsOpen(totalCount > 0 && checkedCount < totalCount)
     }
-  }, [isLoading, totalCount, checkedCount])
+  }, [isOpen, isLoading, totalCount, checkedCount])
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
