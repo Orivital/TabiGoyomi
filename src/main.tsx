@@ -19,6 +19,7 @@ if (import.meta.env.DEV) {
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { debugLog, captureError } from './lib/debugLog'
+import { installVitePreloadRecovery } from './lib/vitePreloadRecovery'
 
 // #region agent log
 debugLog('main.tsx', 'app bootstrap', {
@@ -30,6 +31,12 @@ window.addEventListener('error', (e) => {
 })
 window.addEventListener('unhandledrejection', (e) => {
   captureError('unhandledrejection', e.reason)
+})
+installVitePreloadRecovery({
+  target: window,
+  onError: (error) => {
+    captureError('vite:preloadError', error)
+  },
 })
 // #endregion
 

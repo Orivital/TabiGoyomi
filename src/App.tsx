@@ -1,12 +1,40 @@
+import { Suspense, lazy, useEffect, type ComponentType } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthGuard } from './components/AuthGuard'
-import { TripListPage } from './pages/TripListPage'
-import { TripDetailPage } from './pages/TripDetailPage'
-import { NewTripPage } from './pages/NewTripPage'
-import { NewEventPage } from './pages/NewEventPage'
-import { EditEventPage } from './pages/EditEventPage'
-import { EventMemoriesPage } from './pages/EventMemoriesPage'
-import { NotFoundPage } from './pages/NotFoundPage'
+import { clearVitePreloadRecovery } from './lib/vitePreloadRecovery'
+
+function lazyPage<T extends string>(
+  load: () => Promise<Record<T, ComponentType>>,
+  exportName: T,
+) {
+  return lazy(async () => ({
+    default: (await load())[exportName],
+  }))
+}
+
+const TripListPage = lazyPage(() => import('./pages/TripListPage'), 'TripListPage')
+const TripDetailPage = lazyPage(() => import('./pages/TripDetailPage'), 'TripDetailPage')
+const NewTripPage = lazyPage(() => import('./pages/NewTripPage'), 'NewTripPage')
+const NewEventPage = lazyPage(() => import('./pages/NewEventPage'), 'NewEventPage')
+const EditEventPage = lazyPage(() => import('./pages/EditEventPage'), 'EditEventPage')
+const EventMemoriesPage = lazyPage(() => import('./pages/EventMemoriesPage'), 'EventMemoriesPage')
+const NotFoundPage = lazyPage(() => import('./pages/NotFoundPage'), 'NotFoundPage')
+
+function RouteLoadingFallback() {
+  return (
+    <div className="page">
+      <p>読み込み中...</p>
+    </div>
+  )
+}
+
+function PreloadRecoveryReset() {
+  useEffect(() => {
+    clearVitePreloadRecovery(window)
+  }, [])
+
+  return null
+}
 
 function App() {
   return (
@@ -16,24 +44,29 @@ function App() {
           path="/*"
           element={
             <AuthGuard>
-              <Routes>
-                <Route path="/" element={<TripListPage />} />
-                <Route path="/trips/new" element={<NewTripPage />} />
-                <Route path="/trips/:id" element={<TripDetailPage />} />
-                <Route
-                  path="/trips/:tripId/days/:dayId/events/new"
-                  element={<NewEventPage />}
-                />
-                <Route
-                  path="/trips/:tripId/events/:eventId/edit"
-                  element={<EditEventPage />}
-                />
-                <Route
-                  path="/trips/:tripId/memories"
-                  element={<EventMemoriesPage />}
-                />
-                <Route path="*" element={<NotFoundPage />} />
-              </Routes>
+              <Suspense fallback={<RouteLoadingFallback />}>
+                <>
+                  <Routes>
+                    <Route path="/" element={<TripListPage />} />
+                    <Route path="/trips/new" element={<NewTripPage />} />
+                    <Route path="/trips/:id" element={<TripDetailPage />} />
+                    <Route
+                      path="/trips/:tripId/days/:dayId/events/new"
+                      element={<NewEventPage />}
+                    />
+                    <Route
+                      path="/trips/:tripId/events/:eventId/edit"
+                      element={<EditEventPage />}
+                    />
+                    <Route
+                      path="/trips/:tripId/memories"
+                      element={<EventMemoriesPage />}
+                    />
+                    <Route path="*" element={<NotFoundPage />} />
+                  </Routes>
+                  <PreloadRecoveryReset />
+                </>
+              </Suspense>
             </AuthGuard>
           }
         />

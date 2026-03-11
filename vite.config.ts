@@ -33,6 +33,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // workbox-build 7.4.0 が外部 runtime 分割時に Rollup へ不正な
+        // manualChunks オプションを渡し警告を出すため、runtime を SW に内包する。
+        inlineWorkboxRuntime: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
