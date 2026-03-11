@@ -1,5 +1,5 @@
 import { useMemo, useLayoutEffect, useEffect, useState, useRef } from 'react'
-import { useParams, Link, useLocation } from 'react-router-dom'
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { formatDateWithWeekday, formatDateWithWeekdayWithoutYear, formatTimeWithoutSeconds, compareTimeStrings } from '../lib/dateFormat'
 import { useTripDetail } from '../hooks/useTripDetail'
 import { useCarousel } from '../hooks/useCarousel'
@@ -9,12 +9,9 @@ import { TripChecklist } from '../components/TripChecklist'
 import { TravelTimeIndicator } from '../components/TravelTimeIndicator'
 import type { TripDetailLocationState } from '../types/navigation'
 
-type LocationState = {
-  dayDate: string
-}
-
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const location = useLocation()
   const { trip, tripDays, isLoading, error } = useTripDetail(id ?? null)
   const locationState = location.state as TripDetailLocationState | null
@@ -92,6 +89,35 @@ export function TripDetailPage() {
     })
     return () => window.cancelAnimationFrame(rafId)
   }, [activeIndex, initialFocusIndex, isLoading, isRestoringFocus])
+
+  useEffect(() => {
+    if (isLoading || isRestoringFocus) return
+
+    const currentDayDate = daysInRange[activeIndex]?.day_date
+    if (!currentDayDate) return
+
+    if (
+      locationState?.focusDayDate === currentDayDate &&
+      !locationState?.focusEventId
+    ) {
+      return
+    }
+
+    navigate(`${location.pathname}${location.search}`, {
+      replace: true,
+      state: { focusDayDate: currentDayDate } as TripDetailLocationState,
+    })
+  }, [
+    activeIndex,
+    daysInRange,
+    isLoading,
+    isRestoringFocus,
+    location.pathname,
+    location.search,
+    locationState?.focusDayDate,
+    locationState?.focusEventId,
+    navigate,
+  ])
 
   // イベントカードの縦スクロール位置を復元
   useLayoutEffect(() => {
@@ -286,7 +312,7 @@ function DaySlide({ day, index, tripId }: DaySlideProps) {
       <Link
         to={`/trips/${tripId}/days/${day.id}/events/new`}
         className="btn-add-event"
-        state={{ dayDate: day.day_date } as LocationState}
+        state={{ dayDate: day.day_date }}
       >
         + 予定を追加
       </Link>
