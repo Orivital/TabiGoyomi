@@ -2,8 +2,8 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { DayIndicator } from './DayIndicator'
 
-// jsdom は scrollIntoView を未実装のためモックする
-window.HTMLElement.prototype.scrollIntoView = vi.fn()
+// jsdom は scrollTo を未実装のためモックする
+window.HTMLElement.prototype.scrollTo = vi.fn()
 
 const days = [
   { dayDate: '2024-01-01', label: 'Day 1' },
@@ -22,9 +22,9 @@ test('各日程のボタンが表示される', () => {
 test('activeIndex のボタンに aria-current="true" が付く', () => {
   render(<DayIndicator days={days} activeIndex={1} onSelect={() => {}} />)
 
-  expect(screen.getByText('Day 2')).toHaveAttribute('aria-current', 'true')
-  expect(screen.getByText('Day 1')).not.toHaveAttribute('aria-current')
-  expect(screen.getByText('Day 3')).not.toHaveAttribute('aria-current')
+  expect(screen.getByRole('button', { name: 'Day 2' })).toHaveAttribute('aria-current', 'true')
+  expect(screen.getByRole('button', { name: 'Day 1' })).not.toHaveAttribute('aria-current')
+  expect(screen.getByRole('button', { name: 'Day 3' })).not.toHaveAttribute('aria-current')
 })
 
 test('ボタンをクリックするとそのインデックスで onSelect が呼ばれる', async () => {

@@ -12,6 +12,12 @@ export function DayIndicator({ days, activeIndex, onSelect, instantScroll = fals
   const hasAppliedInitialScrollRef = useRef(false)
   const lastScrolledIndexRef = useRef<number | null>(null)
 
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, index: number) => {
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    onSelect(index)
+  }
+
   // アクティブタブが見えるように自動スクロール
   useLayoutEffect(() => {
     const container = tabsRef.current
@@ -24,10 +30,13 @@ export function DayIndicator({ days, activeIndex, onSelect, instantScroll = fals
 
     const activeTab = container.children[activeIndex] as HTMLElement | undefined
     if (activeTab) {
-      activeTab.scrollIntoView({
+      const targetLeft = activeTab.offsetLeft - (container.clientWidth - activeTab.offsetWidth) / 2
+      const maxScrollLeft = Math.max(0, container.scrollWidth - container.clientWidth)
+      const nextScrollLeft = Math.min(maxScrollLeft, Math.max(0, targetLeft))
+
+      container.scrollTo({
+        left: nextScrollLeft,
         behavior: instantScroll || !hasAppliedInitialScrollRef.current ? 'auto' : 'smooth',
-        block: 'nearest',
-        inline: 'center',
       })
       hasAppliedInitialScrollRef.current = true
       lastScrolledIndexRef.current = activeIndex
@@ -38,14 +47,17 @@ export function DayIndicator({ days, activeIndex, onSelect, instantScroll = fals
     <nav className="day-indicator" aria-label="日程ナビゲーション">
       <div className="day-indicator-tabs" ref={tabsRef}>
         {days.map((day, index) => (
-          <button
+          <div
             key={day.dayDate}
+            role="button"
+            tabIndex={0}
             className={`day-indicator-tab${index === activeIndex ? ' day-indicator-tab--active' : ''}`}
             onClick={() => onSelect(index)}
+            onKeyDown={(event) => handleKeyDown(event, index)}
             aria-current={index === activeIndex ? 'true' : undefined}
           >
-            {day.label}
-          </button>
+            <span className="day-indicator-tab-label">{day.label}</span>
+          </div>
         ))}
       </div>
     </nav>

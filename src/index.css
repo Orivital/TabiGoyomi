@@ -739,21 +739,56 @@ body.dev-mode {
 }
 
 .day-indicator-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
+  min-height: 2.5rem;
   padding: 0.5rem 1rem;
+  font: inherit;
   font-size: 0.875rem;
   font-weight: 500;
+  line-height: 1.2;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
   color: var(--color-text-muted);
   background: white;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
   transition: color 0.2s, background 0.2s, border-color 0.2s;
 }
 
-.day-indicator-tab:hover {
+.day-indicator-tab-label {
+  display: block;
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.day-indicator-tab:focus,
+.day-indicator-tab:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .day-indicator-tab:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+}
+
+.day-indicator-tab:active {
   color: var(--color-primary);
+  background: rgba(37, 99, 235, 0.08);
   border-color: var(--color-primary);
 }
 
@@ -761,6 +796,11 @@ body.dev-mode {
   color: white;
   background: var(--color-primary);
   border-color: var(--color-primary);
+}
+
+.day-indicator-tab--active:active {
+  color: white;
+  background: var(--color-primary);
 }
 
 /* Carousel */
