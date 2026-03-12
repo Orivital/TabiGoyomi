@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchTripMemories, uploadEventMemory, deleteEventMemory } from '../lib/trips'
+import { getErrorMessage } from '../lib/errorMessage'
 import type { EventMemory } from '../types/database'
 
 type Props = {
@@ -33,7 +34,7 @@ export function EventMemories({ tripId }: Props) {
       .catch((err) => {
         if (stale) return
         setMemories([])
-        setError(err instanceof Error ? err.message : '読み込みに失敗しました')
+        setError(getErrorMessage(err, '読み込みに失敗しました'))
         setLoadedTripId(tripId)
       })
     return () => { stale = true }
@@ -64,7 +65,7 @@ export function EventMemories({ tripId }: Props) {
         const memory = await uploadEventMemory(currentTripId, file)
         newMemories.push(memory)
       } catch (err) {
-        errors.push(`${file.name}: ${err instanceof Error ? err.message : 'アップロードに失敗しました'}`)
+        errors.push(`${file.name}: ${getErrorMessage(err, 'アップロードに失敗しました')}`)
       }
     }
     if (activeTripIdRef.current === currentTripId && newMemories.length > 0) {
@@ -84,7 +85,7 @@ export function EventMemories({ tripId }: Props) {
       await deleteEventMemory(memoryId)
       setMemories((prev) => prev.filter((m) => m.id !== memoryId))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '削除に失敗しました')
+      setError(getErrorMessage(err, '削除に失敗しました'))
     }
   }
 

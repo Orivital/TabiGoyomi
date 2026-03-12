@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { fetchTripMemories, uploadEventMemory, deleteEventMemory } from '../lib/trips'
+import { getErrorMessage } from '../lib/errorMessage'
 import type { EventMemory } from '../types/database'
 
 export function EventMemoriesPage() {
@@ -22,7 +23,7 @@ export function EventMemoriesPage() {
         if (!stale) setMemories(data)
       })
       .catch((err) => {
-        if (!stale) setError(err instanceof Error ? err.message : '読み込みに失敗しました')
+        if (!stale) setError(getErrorMessage(err, '読み込みに失敗しました'))
       })
       .finally(() => {
         if (!stale) setIsLoading(false)
@@ -46,7 +47,7 @@ export function EventMemoriesPage() {
         setMemories((prev) => [...prev, memory])
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'アップロードに失敗しました')
+      setError(getErrorMessage(err, 'アップロードに失敗しました'))
     } finally {
       setIsUploading(false)
       e.target.value = ''
@@ -58,7 +59,7 @@ export function EventMemoriesPage() {
       await deleteEventMemory(memoryId)
       setMemories((prev) => prev.filter((memory) => memory.id !== memoryId))
     } catch (err) {
-      setError(err instanceof Error ? err.message : '削除に失敗しました')
+      setError(getErrorMessage(err, '削除に失敗しました'))
     }
   }
 
