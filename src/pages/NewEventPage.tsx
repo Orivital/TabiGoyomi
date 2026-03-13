@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { createTripEvent, createTripDay, fetchTripDays, uploadReceiptImage } from '../lib/trips'
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput'
+import { TimeInput } from '../components/TimeInput'
 import type { PlaceDetails } from '../lib/googleMaps'
 import type { TripDetailLocationState } from '../types/navigation'
 
@@ -200,19 +201,11 @@ export function NewEventPage() {
           <div className="form-row">
             <label>
               開始時刻
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-              />
+              <TimeInput value={startTime} onChange={setStartTime} />
             </label>
             <label>
               終了時刻
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-              />
+              <TimeInput value={endTime} onChange={setEndTime} />
             </label>
           </div>
           <label>

@@ -676,6 +676,32 @@ body.dev-mode {
   appearance: none;
 }
 
+.time-input-wrapper {
+  position: relative;
+}
+
+.time-input-wrapper input[type="time"] {
+  padding-right: 2.25rem;
+}
+
+.time-clear-btn {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.25rem;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.time-clear-btn:hover {
+  color: color-mix(in srgb, var(--color-error) 85%, black);
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;
