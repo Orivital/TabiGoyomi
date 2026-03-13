@@ -14,14 +14,13 @@ export function TimeInput({ value, onChange, label }: Props) {
       <input
         type="time"
         value={value}
-        onInput={(e) => {
+        onInput={() => {
           lastInputSeen.current = true
-          onChange((e.target as HTMLInputElement).value)
         }}
         onChange={(e) => {
           if (!lastInputSeen.current) return
           lastInputSeen.current = false
-          onChange(e.target.value)
+          onChange(e.currentTarget.value)
         }}
       />
       {value && (
