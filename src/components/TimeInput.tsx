@@ -1,9 +1,10 @@
 type Props = {
   value: string
   onChange: (value: string) => void
+  label: string
 }
 
-export function TimeInput({ value, onChange }: Props) {
+export function TimeInput({ value, onChange, label }: Props) {
   return (
     <div className="time-input-wrapper">
       <input
@@ -15,6 +16,7 @@ export function TimeInput({ value, onChange }: Props) {
         <button
           type="button"
           className="time-clear-btn"
+          aria-label={`${label}をクリア`}
           onClick={(e) => {
             e.preventDefault()
             onChange('')

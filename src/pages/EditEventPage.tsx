@@ -235,11 +235,11 @@ export function EditEventPage() {
           <div className="form-row">
             <label>
               開始時刻
-              <TimeInput value={startTime} onChange={setStartTime} />
+              <TimeInput value={startTime} onChange={setStartTime} label="開始時刻" />
             </label>
             <label>
               終了時刻
-              <TimeInput value={endTime} onChange={setEndTime} />
+              <TimeInput value={endTime} onChange={setEndTime} label="終了時刻" />
             </label>
           </div>
           <label>
