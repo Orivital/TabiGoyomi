@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useTrips } from '../hooks/useTrips'
 import { useAuth } from '../hooks/useAuth'
 import { EditableTripCard } from '../components/EditableTripCard'
+import { BrandLogo } from '../components/BrandLogo'
 import type { Trip } from '../types/database'
 
 /**
@@ -49,7 +50,7 @@ export function TripListPage() {
   return (
     <div className="page">
       <header className="header">
-        <h1>旅暦</h1>
+        <BrandLogo />
         <button type="button" className="btn-logout" onClick={() => signOut()}>
           ログアウト
         </button>
