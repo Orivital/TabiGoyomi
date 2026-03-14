@@ -71,10 +71,6 @@ function buildPairs(events: TripEvent[]): EventPair[] {
   return pairs
 }
 
-function buildTravelTimeFromDb(durationMinutes: number, mode: TravelMode): TravelTime {
-  return buildTravelTimeForMode(durationMinutes, mode)
-}
-
 export function useTravelTimes(events: TripEvent[], dayDate?: string): TravelTimePair[] {
   // Build modes from DB (each "from" event stores travel_mode for the next leg)
   const modesFromDb = useMemo(() => {
@@ -143,10 +139,10 @@ export function useTravelTimes(events: TripEvent[], dayDate?: string): TravelTim
   useEffect(() => {
     const uncached = pairs.filter((p) => {
       const mode = modes.get(pairKey(p.fromEventId, p.toEventId)) ?? DEFAULT_MODE
-      // Skip if we have an in-memory cache hit
-      if (getCachedTravelTime(p.originAddress, p.destinationAddress, mode)) return false
       // Transit always re-fetches with schedule-aware timing
       if (mode === 'transit') return true
+      // Skip if we have an in-memory cache hit
+      if (getCachedTravelTime(p.originAddress, p.destinationAddress, mode)) return false
       // Skip if DB has a cached duration and mode hasn't been locally changed
       const localMode = localModes.get(pairKey(p.fromEventId, p.toEventId))
       if (p.dbDurationMinutes != null && !localMode) return false
@@ -203,7 +199,7 @@ export function useTravelTimes(events: TripEvent[], dayDate?: string): TravelTim
       // Use DB cached duration if no in-memory or fetched result available
       const localMode = localModes.get(pairKey(p.fromEventId, p.toEventId))
       const dbTravelTime = p.dbDurationMinutes != null && !localMode
-        ? buildTravelTimeFromDb(p.dbDurationMinutes, mode)
+        ? buildTravelTimeForMode(p.dbDurationMinutes, mode)
         : null
       const travelTime = cached ?? fetched ?? dbTravelTime ?? null
       return {
