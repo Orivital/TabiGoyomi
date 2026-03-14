@@ -168,7 +168,7 @@ export function TripDetailPage() {
   return (
     <div className="page">
       <TripChecklist tripId={trip.id} />
-      <header className="header">
+      <header className="header header--trip-detail">
         <Link to="/" className="back-link">← 一覧</Link>
         <h1>{trip.title}</h1>
       </header>
