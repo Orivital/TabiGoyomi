@@ -51,6 +51,11 @@ body {
   min-height: 6rem;
 }
 
+.header--trip-detail {
+  margin-bottom: 0.75rem;
+  min-height: 4.5rem;
+}
+
 .header > h1:not(.visually-hidden) {
   font-size: 1.5rem;
   font-weight: 600;
