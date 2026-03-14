@@ -2,6 +2,7 @@ import React from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { debugLog, captureError } from '../lib/debugLog'
 import { detectInAppBrowser } from '../lib/detectInAppBrowser'
+import { BrandLogo } from './BrandLogo'
 
 type AuthGuardProps = {
   children: React.ReactNode
@@ -24,6 +25,32 @@ export function AuthGuard({ children }: AuthGuardProps) {
     return null
   })
 
+  async function handleGoogleSignIn() {
+    setAuthError(null)
+    // #region agent log
+    debugLog('AuthGuard', 'signInWithGoogle clicked', {})
+    // #endregion
+
+    try {
+      const result = await signInWithGoogle()
+      // #region agent log
+      debugLog('AuthGuard', 'signInWithGoogle resolved', {
+        hasError: !!result?.error,
+        error: result?.error?.message,
+      })
+      // #endregion
+
+      if (result?.error) {
+        setAuthError(result.error.message ?? 'ログインに失敗しました')
+      }
+    } catch (error) {
+      // #region agent log
+      captureError('AuthGuard:signInWithGoogle', error)
+      // #endregion
+      setAuthError(error instanceof Error ? error.message : 'ログインに失敗しました')
+    }
+  }
+
   if (isLoading) {
     return (
       <div style={{ padding: '2rem', textAlign: 'center' }}>
@@ -34,18 +61,8 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   if (!user) {
     return (
-      <div
-        style={{
-          padding: '2rem',
-          textAlign: 'center',
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <h1>旅暦</h1>
+      <div className="auth-screen">
+        <BrandLogo variant="hero" />
         {inAppBrowserName && (
           <div className="in-app-browser-banner">
             <p>
@@ -66,28 +83,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
           type="button"
           className="btn-primary"
           disabled={!!inAppBrowserName}
-          onClick={() => {
-            setAuthError(null)
-            // #region agent log
-            debugLog('AuthGuard', 'signInWithGoogle clicked', {})
-            // #endregion
-            signInWithGoogle()?.then((r)=>{
-              // #region agent log
-              debugLog('AuthGuard', 'signInWithGoogle resolved', {
-                hasError: !!r?.error,
-                error: r?.error?.message,
-              })
-              // #endregion
-              if (r?.error) {
-                setAuthError(r.error.message ?? 'ログインに失敗しました')
-              }
-            }).catch((e)=>{
-              // #region agent log
-              captureError('AuthGuard:signInWithGoogle', e)
-              // #endregion
-              setAuthError(e instanceof Error ? e.message : 'ログインに失敗しました')
-            });
-          }}
+          onClick={handleGoogleSignIn}
         >
           Googleでログイン
         </button>
@@ -97,17 +93,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
 
   if (!isAllowed) {
     return (
-      <div
-        style={{
-          padding: '2rem',
-          textAlign: 'center',
-          minHeight: '100vh',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+      <div className="auth-screen">
         <h1>アクセスできません</h1>
         <p style={{ marginBottom: '1.5rem' }}>
           このアプリは招待されたユーザーのみ利用できます。
