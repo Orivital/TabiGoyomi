@@ -193,7 +193,7 @@ export function useTravelTimes(events: TripEvent[], dayDate?: string): TravelTim
         return next
       })
     })
-  }, [pairs, modes, localModes])
+  }, [pairs, modes, localModes, dayDate])
 
   return useMemo(() => {
     return pairs.map((p) => {
