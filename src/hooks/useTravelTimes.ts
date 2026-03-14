@@ -37,13 +37,13 @@ function resultKey(fromId: string, toId: string, mode: TravelMode): string {
 }
 
 function normalizeAddress(location: string | null, address: string): string {
-  // 郵便番号（〒xxx-xxxx）を除去
-  let normalized = address.replace(/〒?\d{3}-?\d{4}\s*/g, '')
-  // 全角数字・ハイフンを半角に変換
-  normalized = normalized
+  // 全角数字・ハイフンを半角に変換（郵便番号の除去より先に行う）
+  let normalized = address
     .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
     .replace(/[ー−—–]/g, '-')
-  normalized = normalized.trim()
+    .trim()
+  // 郵便番号（〒xxx-xxxx）を除去
+  normalized = normalized.replace(/〒?\d{3}-?\d{4}\s*/g, '').trim()
   if (location) {
     return `${location}, ${normalized}`
   }
