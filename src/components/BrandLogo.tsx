@@ -5,5 +5,15 @@ type BrandLogoProps = {
 const logoSrc = `${import.meta.env.BASE_URL}header-logo.png`
 
 export function BrandLogo({ variant = 'header' }: BrandLogoProps) {
-  return <img src={logoSrc} alt="旅暦" className={`brand-logo brand-logo--${variant}`} loading="eager" decoding="async" />
+  return (
+    <img
+      src={logoSrc}
+      width={440}
+      height={240}
+      alt="旅暦"
+      className={`brand-logo brand-logo--${variant}`}
+      loading="eager"
+      decoding="async"
+    />
+  )
 }
