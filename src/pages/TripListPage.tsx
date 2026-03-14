@@ -51,6 +51,7 @@ export function TripListPage() {
     <div className="page">
       <header className="header">
         <BrandLogo />
+        <h1 className="visually-hidden">旅程一覧</h1>
         <button type="button" className="btn-logout" onClick={() => signOut()}>
           ログアウト
         </button>
