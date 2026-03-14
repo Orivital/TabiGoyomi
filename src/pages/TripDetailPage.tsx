@@ -223,7 +223,7 @@ type DaySlideProps = {
 }
 
 function DaySlide({ day, index, tripId }: DaySlideProps) {
-  const travelTimes = useTravelTimes(day.events)
+  const travelTimes = useTravelTimes(day.events, day.day_date)
 
   return (
     <section className="trip-day-slide" data-carousel-index={index}>

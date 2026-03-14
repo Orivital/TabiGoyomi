@@ -14,6 +14,12 @@ export type TravelTime = {
   driving: number | null   // minutes
 }
 
+export type TravelTimeRequest = {
+  mode: TravelMode
+  departureTime?: Date
+  arrivalTime?: Date
+}
+
 export type PlaceDetails = {
   name: string
   address: string | null
@@ -152,7 +158,15 @@ export async function getPlaceDetails(
   }
 }
 
-// Distance Matrix: travel time cache
+export function buildTravelTimeForMode(duration: number | null, mode: TravelMode): TravelTime {
+  return {
+    walking: mode === 'walking' ? duration : null,
+    transit: mode === 'transit' ? duration : null,
+    driving: mode === 'driving' ? duration : null,
+  }
+}
+
+// Route Matrix: travel time cache
 const travelTimeCache = new Map<string, TravelTime>()
 
 function travelTimeCacheKey(origin: string, destination: string, mode: TravelMode = 'transit'): string {
@@ -168,38 +182,14 @@ export function clearTravelTimeCache(): void {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let distanceMatrixService: any = null
+let RouteMatrixClass: any = null
 
-async function getDistanceMatrixService() {
-  if (distanceMatrixService) return distanceMatrixService
+async function getRouteMatrixClass() {
+  if (RouteMatrixClass) return RouteMatrixClass
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const routesLib = (await importLibrary('routes')) as any
-  distanceMatrixService = new routesLib.DistanceMatrixService()
-  return distanceMatrixService
-}
-
-async function fetchDuration(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  service: any,
-  origin: string,
-  destination: string,
-  travelMode: string,
-): Promise<number | null> {
-  try {
-    const result = await service.getDistanceMatrix({
-      origins: [origin],
-      destinations: [destination],
-      travelMode,
-    })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const element = (result as any).rows?.[0]?.elements?.[0]
-    if (element?.status === 'OK' && element.duration) {
-      return Math.round(element.duration.value / 60)
-    }
-    return null
-  } catch {
-    return null
-  }
+  RouteMatrixClass = routesLib.RouteMatrix
+  return RouteMatrixClass
 }
 
 const TRAVEL_MODE_MAP: Record<TravelMode, string> = {
@@ -208,26 +198,50 @@ const TRAVEL_MODE_MAP: Record<TravelMode, string> = {
   driving: 'DRIVING',
 }
 
+async function fetchDuration(
+  origin: string,
+  destination: string,
+  request: TravelTimeRequest,
+): Promise<number | null> {
+  try {
+    const RouteMatrix = await getRouteMatrixClass()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const req: any = {
+      origins: [origin],
+      destinations: [destination],
+      travelMode: TRAVEL_MODE_MAP[request.mode],
+      fields: ['durationMillis'],
+    }
+    if (request.departureTime) req.departureTime = request.departureTime
+    if (request.arrivalTime) req.arrivalTime = request.arrivalTime
+
+    const response = await RouteMatrix.computeRouteMatrix(req)
+    const item = response?.matrix?.rows?.[0]?.items?.[0]
+    if (item?.durationMillis != null) {
+      return Math.round(item.durationMillis / 60_000)
+    }
+    return null
+  } catch (e) {
+    console.error('[RouteMatrix] fetchDuration error', e)
+    return null
+  }
+}
+
 export async function getTravelTime(
   origin: string,
   destination: string,
-  mode: TravelMode = 'transit',
+  request: TravelTimeRequest = { mode: 'transit' },
 ): Promise<TravelTime> {
+  const mode = request.mode
   const cacheKey = travelTimeCacheKey(origin, destination, mode)
   const cached = travelTimeCache.get(cacheKey)
   if (cached) return cached
 
   await ensureLoaded()
 
-  const service = await getDistanceMatrixService()
+  const duration = await fetchDuration(origin, destination, request)
 
-  const duration = await fetchDuration(service, origin, destination, TRAVEL_MODE_MAP[mode])
-
-  const travelTime: TravelTime = {
-    walking: mode === 'walking' ? duration : null,
-    transit: mode === 'transit' ? duration : null,
-    driving: mode === 'driving' ? duration : null,
-  }
+  const travelTime = buildTravelTimeForMode(duration, mode)
   travelTimeCache.set(cacheKey, travelTime)
   return travelTime
 }

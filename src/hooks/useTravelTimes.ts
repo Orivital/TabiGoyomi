@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react'
-import { getTravelTime, getCachedTravelTime, isGoogleMapsAvailable, isValidTravelMode } from '../lib/googleMaps'
-import type { TravelTime, TravelMode } from '../lib/googleMaps'
+import { getTravelTime, getCachedTravelTime, isGoogleMapsAvailable, isValidTravelMode, buildTravelTimeForMode } from '../lib/googleMaps'
+import type { TravelTime, TravelMode, TravelTimeRequest } from '../lib/googleMaps'
 import type { TripEvent } from '../types/database'
 import { updateTripEvent } from '../lib/trips'
 import { markSelfUpdate, clearSelfUpdate } from '../lib/realtimeSkipList'
+import { buildTransitTimeRequest } from '../lib/travelTiming'
 
 export type TravelTimePair = {
   fromEventId: string
@@ -20,6 +21,9 @@ type EventPair = {
   originAddress: string
   destinationAddress: string
   dbDurationMinutes: number | null
+  fromEndTime: string | null
+  toStartTime: string | null
+  fromStartTime: string | null
 }
 
 const DEFAULT_MODE: TravelMode = 'walking'
@@ -32,6 +36,20 @@ function resultKey(fromId: string, toId: string, mode: TravelMode): string {
   return `${fromId}|${toId}|${mode}`
 }
 
+function normalizeAddress(location: string | null, address: string): string {
+  // 郵便番号（〒xxx-xxxx）を除去
+  let normalized = address.replace(/〒?\d{3}-?\d{4}\s*/g, '')
+  // 全角数字・ハイフンを半角に変換
+  normalized = normalized
+    .replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+    .replace(/[ー−—–]/g, '-')
+  normalized = normalized.trim()
+  if (location) {
+    return `${location}, ${normalized}`
+  }
+  return normalized
+}
+
 function buildPairs(events: TripEvent[]): EventPair[] {
   const pairs: EventPair[] = []
   for (let i = 0; i < events.length - 1; i++) {
@@ -41,9 +59,12 @@ function buildPairs(events: TripEvent[]): EventPair[] {
       pairs.push({
         fromEventId: from.id,
         toEventId: to.id,
-        originAddress: from.address,
-        destinationAddress: to.address,
+        originAddress: normalizeAddress(from.location, from.address),
+        destinationAddress: normalizeAddress(to.location, to.address),
         dbDurationMinutes: from.travel_duration_minutes,
+        fromEndTime: from.end_time,
+        toStartTime: to.start_time,
+        fromStartTime: from.start_time,
       })
     }
   }
@@ -51,14 +72,10 @@ function buildPairs(events: TripEvent[]): EventPair[] {
 }
 
 function buildTravelTimeFromDb(durationMinutes: number, mode: TravelMode): TravelTime {
-  return {
-    walking: mode === 'walking' ? durationMinutes : null,
-    transit: mode === 'transit' ? durationMinutes : null,
-    driving: mode === 'driving' ? durationMinutes : null,
-  }
+  return buildTravelTimeForMode(durationMinutes, mode)
 }
 
-export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
+export function useTravelTimes(events: TripEvent[], dayDate?: string): TravelTimePair[] {
   // Build modes from DB (each "from" event stores travel_mode for the next leg)
   const modesFromDb = useMemo(() => {
     const m = new Map<string, TravelMode>()
@@ -128,6 +145,8 @@ export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
       const mode = modes.get(pairKey(p.fromEventId, p.toEventId)) ?? DEFAULT_MODE
       // Skip if we have an in-memory cache hit
       if (getCachedTravelTime(p.originAddress, p.destinationAddress, mode)) return false
+      // Transit always re-fetches with schedule-aware timing
+      if (mode === 'transit') return true
       // Skip if DB has a cached duration and mode hasn't been locally changed
       const localMode = localModes.get(pairKey(p.fromEventId, p.toEventId))
       if (p.dbDurationMinutes != null && !localMode) return false
@@ -140,7 +159,16 @@ export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
     Promise.allSettled(
       uncached.map((p) => {
         const mode = modes.get(pairKey(p.fromEventId, p.toEventId)) ?? DEFAULT_MODE
-        return getTravelTime(p.originAddress, p.destinationAddress, mode)
+        let request: TravelTimeRequest = { mode }
+        if (mode === 'transit' && dayDate) {
+          request = buildTransitTimeRequest({
+            dayDate,
+            fromEndTime: p.fromEndTime,
+            toStartTime: p.toStartTime,
+            fromStartTime: p.fromStartTime,
+          })
+        }
+        return getTravelTime(p.originAddress, p.destinationAddress, request)
       })
     ).then((settled) => {
       if (generationRef.current !== generation) return
@@ -152,9 +180,9 @@ export function useTravelTimes(events: TripEvent[]): TravelTimePair[] {
           const result = settled[i]
           if (result?.status === 'fulfilled') {
             next.set(resultKey(p.fromEventId, p.toEventId, mode), result.value)
-            // Persist duration to DB (fire-and-forget)
+            // Persist duration to DB (fire-and-forget); skip transit (time-sensitive)
             const duration = result.value[mode]
-            if (duration != null) {
+            if (duration != null && mode !== 'transit') {
               markSelfUpdate(p.fromEventId)
               updateTripEvent(p.fromEventId, { travel_duration_minutes: duration }).catch(() => {
                 clearSelfUpdate(p.fromEventId)
