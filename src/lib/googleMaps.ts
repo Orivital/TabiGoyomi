@@ -233,15 +233,21 @@ export async function getTravelTime(
   request: TravelTimeRequest = { mode: 'transit' },
 ): Promise<TravelTime> {
   const mode = request.mode
+  const isTimeSensitive = mode === 'transit'
   const cacheKey = travelTimeCacheKey(origin, destination, mode)
-  const cached = travelTimeCache.get(cacheKey)
-  if (cached) return cached
+
+  if (!isTimeSensitive) {
+    const cached = travelTimeCache.get(cacheKey)
+    if (cached) return cached
+  }
 
   await ensureLoaded()
 
   const duration = await fetchDuration(origin, destination, request)
 
   const travelTime = buildTravelTimeForMode(duration, mode)
-  travelTimeCache.set(cacheKey, travelTime)
+  if (!isTimeSensitive) {
+    travelTimeCache.set(cacheKey, travelTime)
+  }
   return travelTime
 }
