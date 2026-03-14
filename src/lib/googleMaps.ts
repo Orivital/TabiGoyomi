@@ -169,12 +169,15 @@ export function buildTravelTimeForMode(duration: number | null, mode: TravelMode
 // Route Matrix: travel time cache
 const travelTimeCache = new Map<string, TravelTime>()
 
-function travelTimeCacheKey(origin: string, destination: string, mode: TravelMode = 'transit'): string {
-  return `${origin}|${destination}|${mode}`
+function travelTimeCacheKey(origin: string, destination: string, request: TravelTimeRequest): string {
+  let key = `${origin}|${destination}|${request.mode}`
+  if (request.departureTime) key += `|d${request.departureTime.getTime()}`
+  if (request.arrivalTime) key += `|a${request.arrivalTime.getTime()}`
+  return key
 }
 
 export function getCachedTravelTime(origin: string, destination: string, mode: TravelMode = 'transit'): TravelTime | undefined {
-  return travelTimeCache.get(travelTimeCacheKey(origin, destination, mode))
+  return travelTimeCache.get(travelTimeCacheKey(origin, destination, { mode }))
 }
 
 export function clearTravelTimeCache(): void {
@@ -233,20 +236,17 @@ export async function getTravelTime(
   request: TravelTimeRequest = { mode: 'transit' },
 ): Promise<TravelTime> {
   const mode = request.mode
-  const isTimeSensitive = mode === 'transit'
-  const cacheKey = travelTimeCacheKey(origin, destination, mode)
-
-  if (!isTimeSensitive) {
-    const cached = travelTimeCache.get(cacheKey)
-    if (cached) return cached
-  }
+  const cacheKey = travelTimeCacheKey(origin, destination, request)
+  const cached = travelTimeCache.get(cacheKey)
+  if (cached) return cached
 
   await ensureLoaded()
 
   const duration = await fetchDuration(origin, destination, request)
 
   const travelTime = buildTravelTimeForMode(duration, mode)
-  if (!isTimeSensitive) {
+  // Transit results are time-sensitive and always re-fetched; skip caching to avoid unbounded growth
+  if (mode !== 'transit') {
     travelTimeCache.set(cacheKey, travelTime)
   }
   return travelTime
