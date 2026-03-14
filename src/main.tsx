@@ -1,21 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-
-// 開発環境では body に dev-mode クラスを付与して背景色を変える
-if (import.meta.env.DEV) {
-  document.body.classList.add('dev-mode')
-
-  // ウォーターマーク: 「開発」文字を斜めに敷き詰めるオーバーレイ
-  const watermark = document.createElement('div')
-  watermark.className = 'dev-watermark'
-  // 「開発」テキストを生成して画面を埋め尽くす
-  const text = '開発 '.repeat(200)
-  const lines = Array.from({ length: 40 }, () => text).join('\n')
-  watermark.textContent = lines
-  document.body.appendChild(watermark)
-}
-
 import App from './App.tsx'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { debugLog, captureError } from './lib/debugLog'
