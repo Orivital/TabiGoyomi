@@ -31,19 +31,35 @@ export function useTrips() {
   }, [])
 
   useEffect(() => {
-    const channel = supabase
-      .channel('trips-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'trips' },
-        () => {
-          loadTrips()
-        }
-      )
-      .subscribe()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    const channelName = `trips-changes-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const timer = window.setTimeout(() => {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'trips' },
+          () => {
+            loadTrips()
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'trip_events' },
+          () => {
+            loadTrips()
+          }
+        )
+        .subscribe((status, err) => {
+          console.log('[useTrips] Realtime subscribe status:', status, err ?? '')
+        })
+    }, 0)
 
     return () => {
-      supabase.removeChannel(channel)
+      window.clearTimeout(timer)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
   }, [])
 

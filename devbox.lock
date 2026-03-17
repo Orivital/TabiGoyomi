@@ -2,8 +2,8 @@
   "lockfile_version": "1",
   "packages": {
     "github:NixOS/nixpkgs/nixpkgs-unstable": {
-      "last_modified": "2026-02-04T01:49:30Z",
-      "resolved": "github:NixOS/nixpkgs/aa290c9891fa4ebe88f8889e59633d20cc06a5f2?lastModified=1770169770"
+      "last_modified": "2026-03-15T17:58:12Z",
+      "resolved": "github:NixOS/nixpkgs/a07d4ce6bee67d7c838a8a5796e75dff9caa21ef?lastModified=1773597492"
     },
     "glibcLocales@latest": {
       "last_modified": "2026-02-23T15:40:43Z",
@@ -165,11 +165,22 @@
     "postgresql": {
       "plugin_version": "0.0.2",
       "resolved": "github:NixOS/nixpkgs/aa290c9891fa4ebe88f8889e59633d20cc06a5f2#postgresql",
-      "source": "nixpkg"
-    },
-    "supabase-cli": {
-      "resolved": "github:NixOS/nixpkgs/aa290c9891fa4ebe88f8889e59633d20cc06a5f2#supabase-cli",
-      "source": "nixpkg"
+      "source": "nixpkg",
+      "systems": {
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "path": "/nix/store/4ymb19kxf4jhvxgpgcpla0v873fj6gk7-postgresql-17.7",
+              "default": true
+            },
+            {
+              "name": "man",
+              "path": "/nix/store/g9js21qckjnan7v3acw82m6ax59801n5-postgresql-17.7-man",
+              "default": true
+            }
+          ]
+        }
+      }
     }
   }
 }

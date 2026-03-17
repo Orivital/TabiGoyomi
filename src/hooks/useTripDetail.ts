@@ -53,32 +53,39 @@ export function useTripDetail(tripId: string | null) {
   useEffect(() => {
     if (!tripId) return
 
-    const channel = supabase
-      .channel(`trip-detail-${tripId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` },
-        load
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'trip_days', filter: `trip_id=eq.${tripId}` },
-        load
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'trip_events' },
-        (payload) => {
-          // Skip reload for self-initiated travel_mode updates
-          const id = (payload.new as { id?: string })?.id
-          if (id && payload.eventType === 'UPDATE' && consumeSelfUpdate(id)) return
-          load()
-        }
-      )
-      .subscribe()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    const channelName = `trip-detail-${tripId}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const timer = window.setTimeout(() => {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'trips', filter: `id=eq.${tripId}` },
+          load
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'trip_days', filter: `trip_id=eq.${tripId}` },
+          load
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'trip_events' },
+          (payload) => {
+            // Skip reload for self-initiated travel_mode updates
+            const id = (payload.new as { id?: string })?.id
+            if (id && payload.eventType === 'UPDATE' && consumeSelfUpdate(id)) return
+            load()
+          }
+        )
+        .subscribe()
+    }, 0)
 
     return () => {
-      supabase.removeChannel(channel)
+      window.clearTimeout(timer)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
   }, [tripId, load])
 
