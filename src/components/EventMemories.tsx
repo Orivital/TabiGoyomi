@@ -1,16 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
-import { fetchTripMemories, uploadEventMemory, deleteEventMemory } from '../lib/trips'
+import { uploadEventMemory, deleteEventMemory } from '../lib/trips'
 import { getErrorMessage } from '../lib/errorMessage'
 import type { EventMemory } from '../types/database'
+import { useEventMemories } from '../hooks/useEventMemories'
 
 type Props = {
   tripId: string
 }
 
 export function EventMemories({ tripId }: Props) {
-  const [memories, setMemories] = useState<EventMemory[]>([])
-  const [loadedTripId, setLoadedTripId] = useState<string | null>(null)
-  const [uploadingTripId, setUploadingTripId] = useState<string | null>(null)
+  const { memories, setMemories, isLoading } = useEventMemories(tripId)
+  const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const activeTripIdRef = useRef(tripId)
@@ -22,26 +22,6 @@ export function EventMemories({ tripId }: Props) {
     }
   }, [tripId])
 
-  useEffect(() => {
-    let stale = false
-    fetchTripMemories(tripId)
-      .then((data) => {
-        if (stale) return
-        setMemories(data)
-        setError(null)
-        setLoadedTripId(tripId)
-      })
-      .catch((err) => {
-        if (stale) return
-        setMemories([])
-        setError(getErrorMessage(err, '読み込みに失敗しました'))
-        setLoadedTripId(tripId)
-      })
-    return () => { stale = true }
-  }, [tripId])
-
-  const isLoading = loadedTripId !== tripId
-  const isUploading = uploadingTripId === tripId
   const isAddDisabled = isLoading || isUploading
   const visibleMemories = isLoading ? [] : memories
   const visibleError = isLoading ? null : error
@@ -56,7 +36,7 @@ export function EventMemories({ tripId }: Props) {
     if (!files || files.length === 0) return
 
     const currentTripId = tripId
-    setUploadingTripId(currentTripId)
+    setIsUploading(true)
     setError(null)
     const newMemories: EventMemory[] = []
     const errors: string[] = []
@@ -75,7 +55,7 @@ export function EventMemories({ tripId }: Props) {
       setError(errors.join('\n'))
     }
     if (activeTripIdRef.current === currentTripId) {
-      setUploadingTripId(null)
+      setIsUploading(false)
       e.target.value = ''
     }
   }

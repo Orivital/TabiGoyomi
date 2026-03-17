@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { supabase, syncRealtimeAuth } from '../lib/supabase'
 import { debugLog, captureError } from '../lib/debugLog'
 
 export type AuthState = {
@@ -39,13 +39,14 @@ export function useAuth() {
     // #region agent log
     debugLog('useAuth', 'useEffect started', {})
     // #endregion
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       // #region agent log
       debugLog('useAuth', 'getSession resolved', {
         hasSession: !!session,
         hasEmail: !!session?.user?.email,
       })
       // #endregion
+      await syncRealtimeAuth(session?.access_token)
       setUser(session?.user ?? null)
       if (session?.user?.email) {
         checkAllowed(session.user.email).then((v)=>{
@@ -74,6 +75,9 @@ export function useAuth() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       try {
+        void syncRealtimeAuth(session?.access_token).catch((error) => {
+          captureError('useAuth:syncRealtimeAuth', error)
+        })
         // #region agent log
         debugLog('useAuth', 'onAuthStateChange', {
           event,

@@ -35,22 +35,56 @@ export function useChecklist(tripId: string | null) {
   useEffect(() => {
     if (!tripId) return
 
-    const channel = supabase
-      .channel(`checklist-${tripId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'trip_checklist_items',
-          filter: `trip_id=eq.${tripId}`,
-        },
-        load
-      )
-      .subscribe()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    const channelName = `checklist-${tripId}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const timer = window.setTimeout(() => {
+      channel = supabase
+        .channel(channelName)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'trip_checklist_items',
+            filter: `trip_id=eq.${tripId}`,
+          },
+          () => {
+            void load()
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'trip_checklist_items',
+            filter: `trip_id=eq.${tripId}`,
+          },
+          () => {
+            void load()
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'DELETE',
+            schema: 'public',
+            table: 'trip_checklist_items',
+          },
+          () => {
+            void load()
+          }
+        )
+        .subscribe((status, err) => {
+          console.log('[useChecklist] Realtime subscribe status:', status, err ?? '')
+        })
+    }, 0)
 
     return () => {
-      supabase.removeChannel(channel)
+      window.clearTimeout(timer)
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
     }
   }, [tripId, load])
 

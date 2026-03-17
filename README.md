@@ -29,12 +29,19 @@ pnpm install
 ローカル Supabase を起動します:
 
 ```bash
-supabase start
+devbox run supabase:start
 ```
 
-`.env.local` はリポジトリに含まれています（gitignore 済み）。デフォルトのローカル
-Supabase 認証情報が設定されています。`supabase status` で確認した値に合わせて
-調整してください。
+`devbox run supabase:start` は `supabase start` の後に `supabase status -o env`
+から現在の `API_URL` / `PUBLISHABLE_KEY` / `ANON_KEY` を `.env.local` へ同期します。
+ローカル Realtime は stale な鍵で不安定になるため、`.env.local` の
+`VITE_SUPABASE_PUBLISHABLE_KEY` は常にこの同期結果を使ってください。
+
+手動で起動した場合も、開発サーバー起動前に以下を実行してください。
+
+```bash
+./scripts/sync-local-supabase-env.sh
+```
 
 ```bash
 pnpm dev

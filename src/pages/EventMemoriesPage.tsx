@@ -1,35 +1,15 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { fetchTripMemories, uploadEventMemory, deleteEventMemory } from '../lib/trips'
+import { uploadEventMemory, deleteEventMemory } from '../lib/trips'
 import { getErrorMessage } from '../lib/errorMessage'
-import type { EventMemory } from '../types/database'
+import { useEventMemories } from '../hooks/useEventMemories'
 
 export function EventMemoriesPage() {
   const { tripId } = useParams<{ tripId: string }>()
-  const [memories, setMemories] = useState<EventMemory[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { memories, setMemories, isLoading } = useEventMemories(tripId ?? null)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => {
-    if (!tripId) return
-    let stale = false
-    setMemories([])
-    setError(null)
-    setIsLoading(true)
-    fetchTripMemories(tripId)
-      .then((data) => {
-        if (!stale) setMemories(data)
-      })
-      .catch((err) => {
-        if (!stale) setError(getErrorMessage(err, '読み込みに失敗しました'))
-      })
-      .finally(() => {
-        if (!stale) setIsLoading(false)
-      })
-    return () => { stale = true }
-  }, [tripId])
 
   const handleUploadClick = () => {
     fileInputRef.current?.click()
