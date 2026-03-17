@@ -39,14 +39,16 @@ export function useAuth() {
     // #region agent log
     debugLog('useAuth', 'useEffect started', {})
     // #endregion
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       // #region agent log
       debugLog('useAuth', 'getSession resolved', {
         hasSession: !!session,
         hasEmail: !!session?.user?.email,
       })
       // #endregion
-      await syncRealtimeAuth(session?.access_token)
+      void syncRealtimeAuth(session?.access_token).catch((error) => {
+        captureError('useAuth:syncRealtimeAuth:getSession', error)
+      })
       setUser(session?.user ?? null)
       if (session?.user?.email) {
         checkAllowed(session.user.email).then((v)=>{
