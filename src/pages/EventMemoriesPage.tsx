@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { uploadEventMemory, deleteEventMemory } from '../lib/trips'
 import { getErrorMessage } from '../lib/errorMessage'
@@ -7,9 +7,19 @@ import { useEventMemories } from '../hooks/useEventMemories'
 export function EventMemoriesPage() {
   const { tripId } = useParams<{ tripId: string }>()
   const { memories, setMemories, isLoading } = useEventMemories(tripId ?? null)
-  const [isUploading, setIsUploading] = useState(false)
+  const [uploadingTripId, setUploadingTripId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const activeTripIdRef = useRef(tripId ?? null)
+
+  useEffect(() => {
+    activeTripIdRef.current = tripId ?? null
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }, [tripId])
+
+  const isUploading = uploadingTripId === (tripId ?? null)
 
   const handleUploadClick = () => {
     fileInputRef.current?.click()
@@ -19,17 +29,22 @@ export function EventMemoriesPage() {
     const files = e.target.files
     if (!files || files.length === 0 || !tripId) return
 
-    setIsUploading(true)
+    const currentTripId = tripId
+    setUploadingTripId(currentTripId)
     setError(null)
     try {
       for (const file of Array.from(files)) {
-        const memory = await uploadEventMemory(tripId, file)
-        setMemories((prev) => [...prev, memory])
+        const memory = await uploadEventMemory(currentTripId, file)
+        if (activeTripIdRef.current === currentTripId) {
+          setMemories((prev) => [...prev, memory])
+        }
       }
     } catch (err) {
-      setError(getErrorMessage(err, 'アップロードに失敗しました'))
+      if (activeTripIdRef.current === currentTripId) {
+        setError(getErrorMessage(err, 'アップロードに失敗しました'))
+      }
     } finally {
-      setIsUploading(false)
+      setUploadingTripId((activeTripId) => (activeTripId === currentTripId ? null : activeTripId))
       e.target.value = ''
     }
   }

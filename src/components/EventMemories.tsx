@@ -10,7 +10,7 @@ type Props = {
 
 export function EventMemories({ tripId }: Props) {
   const { memories, setMemories, isLoading } = useEventMemories(tripId)
-  const [isUploading, setIsUploading] = useState(false)
+  const [uploadingTripId, setUploadingTripId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const activeTripIdRef = useRef(tripId)
@@ -22,6 +22,7 @@ export function EventMemories({ tripId }: Props) {
     }
   }, [tripId])
 
+  const isUploading = uploadingTripId === tripId
   const isAddDisabled = isLoading || isUploading
   const visibleMemories = isLoading ? [] : memories
   const visibleError = isLoading ? null : error
@@ -36,7 +37,7 @@ export function EventMemories({ tripId }: Props) {
     if (!files || files.length === 0) return
 
     const currentTripId = tripId
-    setIsUploading(true)
+    setUploadingTripId(currentTripId)
     setError(null)
     const newMemories: EventMemory[] = []
     const errors: string[] = []
@@ -54,10 +55,8 @@ export function EventMemories({ tripId }: Props) {
     if (activeTripIdRef.current === currentTripId && errors.length > 0) {
       setError(errors.join('\n'))
     }
-    if (activeTripIdRef.current === currentTripId) {
-      setIsUploading(false)
-      e.target.value = ''
-    }
+    setUploadingTripId((activeTripId) => (activeTripId === currentTripId ? null : activeTripId))
+    e.target.value = ''
   }
 
   const handleDelete = async (memoryId: string) => {
