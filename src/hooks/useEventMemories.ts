@@ -21,12 +21,13 @@ export function useEventMemories(tripId: string | null) {
 
   useEffect(() => {
     if (!tripId) return
+    const currentTripId = tripId
 
     let ignore = false
 
     async function load() {
       try {
-        const data = await fetchTripMemories(tripId)
+        const data = await fetchTripMemories(currentTripId)
         if (!ignore) {
           setMemories(data)
         }
@@ -50,9 +51,10 @@ export function useEventMemories(tripId: string | null) {
 
   useEffect(() => {
     if (!tripId) return
+    const currentTripId = tripId
 
     let channel: ReturnType<typeof supabase.channel> | null = null
-    const channelName = `event-memories-${tripId}-${Date.now()}-${Math.random().toString(36).slice(2)}`
+    const channelName = `event-memories-${currentTripId}-${Date.now()}-${Math.random().toString(36).slice(2)}`
     const timer = window.setTimeout(() => {
       channel = supabase
         .channel(channelName)
@@ -62,7 +64,7 @@ export function useEventMemories(tripId: string | null) {
             event: 'INSERT',
             schema: 'public',
             table: 'event_memories',
-            filter: `trip_id=eq.${tripId}`,
+            filter: `trip_id=eq.${currentTripId}`,
           },
           () => {
             setReloadKey((current) => current + 1)
@@ -74,7 +76,7 @@ export function useEventMemories(tripId: string | null) {
             event: 'UPDATE',
             schema: 'public',
             table: 'event_memories',
-            filter: `trip_id=eq.${tripId}`,
+            filter: `trip_id=eq.${currentTripId}`,
           },
           () => {
             setReloadKey((current) => current + 1)
