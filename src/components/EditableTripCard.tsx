@@ -10,6 +10,7 @@ import {
   deleteOutOfRangeTripDays,
   deleteTripDay,
 } from '../lib/trips'
+import { ConcurrentModificationError } from '../lib/errors'
 import type { TripDayWithEvents } from '../lib/trips'
 import { formatDateWithWeekdayWithoutYear } from '../lib/dateFormat'
 import { DatePickerField } from './DatePickerField'
@@ -44,6 +45,7 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null)
   const [shouldDeleteThumbnail, setShouldDeleteThumbnail] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const expectedTripUpdatedAtRef = useRef(trip.updated_at)
 
   // 範囲外イベント解決UI用の状態
   const [outOfRangeDays, setOutOfRangeDays] = useState<TripDayWithEvents[]>([])
@@ -73,6 +75,7 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
   })
 
   const handleEditClick = () => {
+    expectedTripUpdatedAtRef.current = trip.updated_at
     setIsEditing(true)
     setTitle(trip.title)
     setStartDate(trip.start_date)
@@ -173,21 +176,34 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
       } else {
         // 影響なし → そのまま保存
         await deleteOutOfRangeTripDays(trip.id, startDate, adjustedEndDate)
-        await updateTrip(trip.id, {
-          title: title.trim(),
-          start_date: startDate,
-          end_date: adjustedEndDate,
-        })
+        let token = expectedTripUpdatedAtRef.current
+        const updatedTrip = await updateTrip(
+          trip.id,
+          {
+            title: title.trim(),
+            start_date: startDate,
+            end_date: adjustedEndDate,
+          },
+          { expectedUpdatedAt: token }
+        )
+        token = updatedTrip.updated_at
         if (thumbnailFile) {
-          await uploadTripThumbnail(trip.id, thumbnailFile)
+          const thumb = await uploadTripThumbnail(trip.id, thumbnailFile, { expectedUpdatedAt: token })
+          token = thumb.updatedAt
         } else if (shouldDeleteThumbnail) {
-          await deleteTripThumbnail(trip.id)
+          const thumb = await deleteTripThumbnail(trip.id, { expectedUpdatedAt: token })
+          token = thumb.updatedAt
         }
+        expectedTripUpdatedAtRef.current = token
         onUpdated()
         setIsEditing(false)
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : '更新に失敗しました')
+      if (err instanceof ConcurrentModificationError) {
+        setError(err.message)
+      } else {
+        setError(err instanceof Error ? err.message : '更新に失敗しました')
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -221,17 +237,25 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
       await deleteOutOfRangeTripDays(trip.id, pendingSave.startDate, pendingSave.endDate)
 
       // トリップ自体を更新
-      await updateTrip(trip.id, {
-        title: pendingSave.title,
-        start_date: pendingSave.startDate,
-        end_date: pendingSave.endDate,
-      })
-
+      let token = expectedTripUpdatedAtRef.current
+      const updatedTrip = await updateTrip(
+        trip.id,
+        {
+          title: pendingSave.title,
+          start_date: pendingSave.startDate,
+          end_date: pendingSave.endDate,
+        },
+        { expectedUpdatedAt: token }
+      )
+      token = updatedTrip.updated_at
       if (thumbnailFile) {
-        await uploadTripThumbnail(trip.id, thumbnailFile)
+        const thumb = await uploadTripThumbnail(trip.id, thumbnailFile, { expectedUpdatedAt: token })
+        token = thumb.updatedAt
       } else if (shouldDeleteThumbnail) {
-        await deleteTripThumbnail(trip.id)
+        const thumb = await deleteTripThumbnail(trip.id, { expectedUpdatedAt: token })
+        token = thumb.updatedAt
       }
+      expectedTripUpdatedAtRef.current = token
 
       onUpdated()
       setIsEditing(false)
@@ -240,7 +264,11 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
       setDayActions({})
       setPendingSave(null)
     } catch (err) {
-      setError(err instanceof Error ? err.message : '更新に失敗しました')
+      if (err instanceof ConcurrentModificationError) {
+        setError(err.message)
+      } else {
+        setError(err instanceof Error ? err.message : '更新に失敗しました')
+      }
     } finally {
       setIsSubmitting(false)
     }

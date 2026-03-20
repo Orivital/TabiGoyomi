@@ -1,7 +1,23 @@
 import { supabase } from './supabase'
 import type { Trip, TripDay, TripEvent, TripChecklistItem, EventMemory } from '../types/database'
+import { ConcurrentModificationError, isConcurrentUpdatePostgrestError } from './errors'
 
 export type TripDayWithEvents = TripDay & { trip_events: TripEvent[] }
+
+export type OptimisticLockOptions = { expectedUpdatedAt: string }
+
+function throwIfConcurrentOrPassthrough<T>(result: { data: T | null; error: { code?: string; message?: string } | null }): T {
+  if (result.error) {
+    if (isConcurrentUpdatePostgrestError(result.error)) {
+      throw new ConcurrentModificationError()
+    }
+    throw result.error
+  }
+  if (result.data == null) {
+    throw new ConcurrentModificationError()
+  }
+  return result.data
+}
 
 export async function fetchTrips() {
   const { data, error } = await supabase
@@ -110,20 +126,21 @@ export async function createTrip(trip: {
 
 export async function updateTrip(
   id: string,
-  updates: Partial<Pick<Trip, 'title' | 'start_date' | 'end_date'>>
+  updates: Partial<Pick<Trip, 'title' | 'start_date' | 'end_date'>>,
+  options: OptimisticLockOptions
 ) {
-  const { data, error } = await supabase
+  const result = await supabase
     .from('trips')
     .update({
       ...updates,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('updated_at', options.expectedUpdatedAt)
     .select()
     .single()
 
-  if (error) throw error
-  return data as Trip
+  return throwIfConcurrentOrPassthrough(result) as Trip
 }
 
 export async function deleteTrip(id: string) {
@@ -144,7 +161,11 @@ const EXTENSION_MAP: Record<string, string> = {
   'image/webp': 'webp',
 }
 
-export async function uploadTripThumbnail(tripId: string, file: File) {
+export async function uploadTripThumbnail(
+  tripId: string,
+  file: File,
+  options: OptimisticLockOptions
+): Promise<{ publicUrl: string; updatedAt: string }> {
   // バリデーション
   if (!ALLOWED_TYPES.includes(file.type)) {
     throw new Error('JPEG、PNG、WebP のみアップロードできます')
@@ -168,29 +189,38 @@ export async function uploadTripThumbnail(tripId: string, file: File) {
     .from(THUMBNAIL_BUCKET)
     .getPublicUrl(filePath)
 
-  const { error: updateError } = await supabase
+  const nextUpdatedAt = new Date().toISOString()
+  const updateResult = await supabase
     .from('trips')
     .update({
       thumbnail_url: urlData.publicUrl,
-      updated_at: new Date().toISOString(),
+      updated_at: nextUpdatedAt,
     })
     .eq('id', tripId)
-  if (updateError) throw updateError
+    .eq('updated_at', options.expectedUpdatedAt)
+    .select()
+    .single()
 
-  return urlData.publicUrl
+  const row = throwIfConcurrentOrPassthrough(updateResult) as Trip
+  return { publicUrl: urlData.publicUrl, updatedAt: row.updated_at }
 }
 
-export async function deleteTripThumbnail(tripId: string) {
+export async function deleteTripThumbnail(tripId: string, options: OptimisticLockOptions): Promise<{ updatedAt: string }> {
   await removeTripThumbnailFile(tripId)
 
-  const { error } = await supabase
+  const updateResult = await supabase
     .from('trips')
     .update({
       thumbnail_url: null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', tripId)
-  if (error) throw error
+    .eq('updated_at', options.expectedUpdatedAt)
+    .select()
+    .single()
+
+  const row = throwIfConcurrentOrPassthrough(updateResult) as Trip
+  return { updatedAt: row.updated_at }
 }
 
 async function removeTripThumbnailFile(tripId: string) {
@@ -353,20 +383,21 @@ export async function updateTripEvent(
       TripEvent,
       'title' | 'location' | 'start_time' | 'end_time' | 'description' | 'sort_order' | 'is_reserved' | 'is_settled' | 'is_reservation_not_needed' | 'cost' | 'phone' | 'address' | 'opening_hours' | 'website_url' | 'google_maps_url' | 'receipt_image_url' | 'travel_mode' | 'travel_duration_minutes'
     >
-  >
+  >,
+  options: OptimisticLockOptions
 ) {
-  const { data, error } = await supabase
+  const result = await supabase
     .from('trip_events')
     .update({
       ...updates,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('updated_at', options.expectedUpdatedAt)
     .select()
     .single()
 
-  if (error) throw error
-  return data as TripEvent
+  return throwIfConcurrentOrPassthrough(result) as TripEvent
 }
 
 export async function deleteTripEvent(id: string) {
@@ -379,7 +410,11 @@ export async function deleteTripEvent(id: string) {
 const RECEIPT_BUCKET = 'receipt-images'
 const RECEIPT_MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 
-export async function uploadReceiptImage(eventId: string, file: File) {
+export async function uploadReceiptImage(
+  eventId: string,
+  file: File,
+  options: OptimisticLockOptions
+): Promise<{ publicUrl: string; updatedAt: string }> {
   if (!ALLOWED_TYPES.includes(file.type)) {
     throw new Error('JPEG、PNG、WebP のみアップロードできます')
   }
@@ -402,29 +437,37 @@ export async function uploadReceiptImage(eventId: string, file: File) {
     .from(RECEIPT_BUCKET)
     .getPublicUrl(filePath)
 
-  const { error: updateError } = await supabase
+  const updateResult = await supabase
     .from('trip_events')
     .update({
       receipt_image_url: urlData.publicUrl,
       updated_at: new Date().toISOString(),
     })
     .eq('id', eventId)
-  if (updateError) throw updateError
+    .eq('updated_at', options.expectedUpdatedAt)
+    .select()
+    .single()
 
-  return urlData.publicUrl
+  const row = throwIfConcurrentOrPassthrough(updateResult) as TripEvent
+  return { publicUrl: urlData.publicUrl, updatedAt: row.updated_at }
 }
 
-export async function deleteReceiptImage(eventId: string) {
+export async function deleteReceiptImage(eventId: string, options: OptimisticLockOptions): Promise<{ updatedAt: string }> {
   await removeReceiptImageFile(eventId)
 
-  const { error } = await supabase
+  const updateResult = await supabase
     .from('trip_events')
     .update({
       receipt_image_url: null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', eventId)
-  if (error) throw error
+    .eq('updated_at', options.expectedUpdatedAt)
+    .select()
+    .single()
+
+  const row = throwIfConcurrentOrPassthrough(updateResult) as TripEvent
+  return { updatedAt: row.updated_at }
 }
 
 async function removeReceiptImageFile(eventId: string) {
@@ -467,20 +510,21 @@ export async function createChecklistItem(item: {
 
 export async function updateChecklistItem(
   id: string,
-  updates: Partial<Pick<TripChecklistItem, 'title' | 'is_checked' | 'sort_order'>>
+  updates: Partial<Pick<TripChecklistItem, 'title' | 'is_checked' | 'sort_order'>>,
+  options: OptimisticLockOptions
 ) {
-  const { data, error } = await supabase
+  const result = await supabase
     .from('trip_checklist_items')
     .update({
       ...updates,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
+    .eq('updated_at', options.expectedUpdatedAt)
     .select()
     .single()
 
-  if (error) throw error
-  return data as TripChecklistItem
+  return throwIfConcurrentOrPassthrough(result) as TripChecklistItem
 }
 
 export async function deleteChecklistItem(id: string) {

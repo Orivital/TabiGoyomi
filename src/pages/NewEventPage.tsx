@@ -124,7 +124,9 @@ export function NewEventPage() {
         google_maps_url: googleMapsUrl.trim() || undefined,
       })
       if (receiptFile) {
-        await uploadReceiptImage(newEvent.id, receiptFile)
+        await uploadReceiptImage(newEvent.id, receiptFile, {
+          expectedUpdatedAt: newEvent.updated_at,
+        })
       }
       navigate(`/trips/${tripId}`, {
         state: createTripDetailState(newEvent.id),
