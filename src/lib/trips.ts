@@ -19,6 +19,26 @@ function throwIfConcurrentOrPassthrough<T>(result: { data: T | null; error: { co
   return result.data
 }
 
+/** ストレージ操作の前に trips.updated_at を検証する（アップロード後のロールバック依存を減らす） */
+async function assertTripThumbnailLock(tripId: string, expectedUpdatedAt: string): Promise<void> {
+  const result = await supabase
+    .from('trips')
+    .select('id')
+    .eq('id', tripId)
+    .eq('updated_at', expectedUpdatedAt)
+    .maybeSingle()
+
+  if (result.error) {
+    if (isConcurrentUpdatePostgrestError(result.error)) {
+      throw new ConcurrentModificationError()
+    }
+    throw result.error
+  }
+  if (result.data == null) {
+    throw new ConcurrentModificationError()
+  }
+}
+
 export async function fetchTrips() {
   const { data, error } = await supabase
     .from('trips')
@@ -176,6 +196,8 @@ export async function uploadTripThumbnail(
 
   const ext = EXTENSION_MAP[file.type] || 'jpg'
   const filePath = `${tripId}/thumbnail.${ext}`
+
+  await assertTripThumbnailLock(tripId, options.expectedUpdatedAt)
 
   const { error: uploadError } = await supabase.storage
     .from(THUMBNAIL_BUCKET)

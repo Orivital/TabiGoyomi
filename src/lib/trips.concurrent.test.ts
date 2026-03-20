@@ -6,15 +6,34 @@ const selectMock = vi.fn()
 const eqMock = vi.fn()
 const updateMock = vi.fn()
 
-const { storageRemoveMock, storageUploadMock } = vi.hoisted(() => ({
-  storageRemoveMock: vi.fn(() => Promise.resolve({ data: [], error: null })),
-  storageUploadMock: vi.fn(() => Promise.resolve({ data: null, error: null })),
-}))
+const {
+  storageRemoveMock,
+  storageUploadMock,
+  tripThumbnailLockMaybeSingleMock,
+  tripThumbnailLockSelectEq1,
+  tripThumbnailLockSelectEq2,
+  fromSelectMock,
+} = vi.hoisted(() => {
+  const tripThumbnailLockMaybeSingleMock = vi.fn()
+  const tripThumbnailLockSelectEq2 = vi.fn()
+  const tripThumbnailLockSelectEq1 = vi.fn(() => ({ eq: tripThumbnailLockSelectEq2 }))
+  tripThumbnailLockSelectEq2.mockReturnValue({ maybeSingle: tripThumbnailLockMaybeSingleMock })
+  const fromSelectMock = vi.fn(() => ({ eq: tripThumbnailLockSelectEq1 }))
+  return {
+    storageRemoveMock: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    storageUploadMock: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    tripThumbnailLockMaybeSingleMock,
+    tripThumbnailLockSelectEq1,
+    tripThumbnailLockSelectEq2,
+    fromSelectMock,
+  }
+})
 
 vi.mock('./supabase', () => ({
   supabase: {
     from: vi.fn(() => ({
       update: updateMock,
+      select: fromSelectMock,
     })),
     storage: {
       from: vi.fn(() => ({
@@ -98,8 +117,16 @@ describe('メディア削除・楽観的ロックの順序', () => {
     selectMock.mockReset()
     storageRemoveMock.mockReset()
     storageUploadMock.mockReset()
+    fromSelectMock.mockReset()
+    tripThumbnailLockSelectEq1.mockReset()
+    tripThumbnailLockSelectEq2.mockReset()
+    tripThumbnailLockMaybeSingleMock.mockReset()
     storageUploadMock.mockResolvedValue({ data: null, error: null })
     storageRemoveMock.mockResolvedValue({ data: [], error: null })
+    tripThumbnailLockSelectEq1.mockReturnValue({ eq: tripThumbnailLockSelectEq2 })
+    tripThumbnailLockSelectEq2.mockReturnValue({ maybeSingle: tripThumbnailLockMaybeSingleMock })
+    fromSelectMock.mockImplementation(() => ({ eq: tripThumbnailLockSelectEq1 }))
+    tripThumbnailLockMaybeSingleMock.mockResolvedValue({ data: { id: 't1' }, error: null })
     updateMock.mockReturnValue({ eq: eqMock })
     eqMock.mockReturnValue({ eq: eqMock, select: selectMock })
     selectMock.mockReturnValue({ single: singleMock })
@@ -151,6 +178,19 @@ describe('メディア削除・楽観的ロックの順序', () => {
     ).rejects.toMatchObject({ name: 'ConcurrentModificationError' })
 
     expect(storageRemoveMock).not.toHaveBeenCalled()
+  })
+
+  it('uploadTripThumbnail: 楽観ロックが既にずれているときはストレージにアップロードしない', async () => {
+    tripThumbnailLockMaybeSingleMock.mockResolvedValue({ data: null, error: null })
+
+    const file = new File(['x'], 'a.jpg', { type: 'image/jpeg' })
+    const { uploadTripThumbnail } = await import('./trips')
+    await expect(
+      uploadTripThumbnail('t1', file, { expectedUpdatedAt: '2026-01-01T00:00:00.000Z' })
+    ).rejects.toMatchObject({ name: 'ConcurrentModificationError' })
+
+    expect(storageUploadMock).not.toHaveBeenCalled()
+    expect(singleMock).not.toHaveBeenCalled()
   })
 
   it('uploadTripThumbnail: DB 衝突時はアップロードしたファイルだけロールバック削除する', async () => {
