@@ -186,15 +186,17 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
           { expectedUpdatedAt: token }
         )
         token = updatedTrip.updated_at
+        expectedTripUpdatedAtRef.current = token
         await deleteOutOfRangeTripDays(trip.id, startDate, adjustedEndDate)
         if (thumbnailFile) {
           const thumb = await uploadTripThumbnail(trip.id, thumbnailFile, { expectedUpdatedAt: token })
           token = thumb.updatedAt
+          expectedTripUpdatedAtRef.current = token
         } else if (shouldDeleteThumbnail) {
           const thumb = await deleteTripThumbnail(trip.id, { expectedUpdatedAt: token })
           token = thumb.updatedAt
+          expectedTripUpdatedAtRef.current = token
         }
-        expectedTripUpdatedAtRef.current = token
         onUpdated()
         setIsEditing(false)
       }
@@ -234,6 +236,7 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
         { expectedUpdatedAt: token }
       )
       token = updatedTrip.updated_at
+      expectedTripUpdatedAtRef.current = token
 
       // 各日のアクションを実行
       for (const day of outOfRangeDays) {
@@ -251,11 +254,12 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
       if (thumbnailFile) {
         const thumb = await uploadTripThumbnail(trip.id, thumbnailFile, { expectedUpdatedAt: token })
         token = thumb.updatedAt
+        expectedTripUpdatedAtRef.current = token
       } else if (shouldDeleteThumbnail) {
         const thumb = await deleteTripThumbnail(trip.id, { expectedUpdatedAt: token })
         token = thumb.updatedAt
+        expectedTripUpdatedAtRef.current = token
       }
-      expectedTripUpdatedAtRef.current = token
 
       onUpdated()
       setIsEditing(false)
