@@ -73,7 +73,24 @@ function buildPairs(events: TripEvent[]): EventPair[] {
   return pairs
 }
 
+function newerIsoTimestamp(a: string, b: string): string {
+  return a > b ? a : b
+}
+
 export function useTravelTimes(events: TripEvent[], dayDate?: string): TravelTimePair[] {
+  /** 自前の updateTripEvent 成功直後の updated_at（props が遅れている間も連鎖保存に使う） */
+  const lastSelfWriteUpdatedAtRef = useRef<Map<string, string>>(new Map())
+
+  const expectedUpdatedAtForEvent = useCallback((eventId: string, propUpdatedAt: string) => {
+    const self = lastSelfWriteUpdatedAtRef.current.get(eventId)
+    if (!self) return propUpdatedAt
+    return newerIsoTimestamp(propUpdatedAt, self)
+  }, [])
+
+  const recordSuccessfulEventWrite = useCallback((eventId: string, newUpdatedAt: string) => {
+    lastSelfWriteUpdatedAtRef.current.set(eventId, newUpdatedAt)
+  }, [])
+
   // Build modes from DB (each "from" event stores travel_mode for the next leg)
   const modesFromDb = useMemo(() => {
     const m = new Map<string, TravelMode>()
@@ -132,18 +149,22 @@ export function useTravelTimes(events: TripEvent[], dayDate?: string): TravelTim
       updateTripEvent(
         fromId,
         { travel_mode: mode, travel_duration_minutes: null },
-        { expectedUpdatedAt: fromEvent.updated_at }
-      ).catch(() => {
-        clearSelfUpdate(fromId)
-        // Revert on failure
-        setLocalModes((prev) => {
-          const next = new Map(prev)
-          next.delete(pairKey(fromId, toId))
-          return next
+        { expectedUpdatedAt: expectedUpdatedAtForEvent(fromId, fromEvent.updated_at) }
+      )
+        .then((row) => {
+          recordSuccessfulEventWrite(fromId, row.updated_at)
         })
-      })
+        .catch(() => {
+          clearSelfUpdate(fromId)
+          // Revert on failure
+          setLocalModes((prev) => {
+            const next = new Map(prev)
+            next.delete(pairKey(fromId, toId))
+            return next
+          })
+        })
     },
-    [events]
+    [events, expectedUpdatedAtForEvent, recordSuccessfulEventWrite]
   )
 
   // Fetch uncached pairs asynchronously
@@ -192,17 +213,21 @@ export function useTravelTimes(events: TripEvent[], dayDate?: string): TravelTim
             if (duration != null && mode !== 'transit') {
               markSelfUpdate(p.fromEventId)
               updateTripEvent(p.fromEventId, { travel_duration_minutes: duration }, {
-                expectedUpdatedAt: p.fromUpdatedAt,
-              }).catch(() => {
-                clearSelfUpdate(p.fromEventId)
+                expectedUpdatedAt: expectedUpdatedAtForEvent(p.fromEventId, p.fromUpdatedAt),
               })
+                .then((row) => {
+                  recordSuccessfulEventWrite(p.fromEventId, row.updated_at)
+                })
+                .catch(() => {
+                  clearSelfUpdate(p.fromEventId)
+                })
             }
           }
         })
         return next
       })
     })
-  }, [pairs, modes, localModes, dayDate])
+  }, [pairs, modes, localModes, dayDate, expectedUpdatedAtForEvent, recordSuccessfulEventWrite])
 
   return useMemo(() => {
     return pairs.map((p) => {
