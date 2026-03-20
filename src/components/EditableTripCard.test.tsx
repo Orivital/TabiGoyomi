@@ -49,7 +49,7 @@ describe('EditableTripCard 保存と楽観ロック', () => {
     })
   })
 
-  it('updateTrip が ConcurrentModificationError のとき deleteOutOfRangeTripDays は呼ばれない', async () => {
+  it('updateTrip が ConcurrentModificationError のとき 範囲外日削除は呼ばれない', async () => {
     const user = userEvent.setup()
     tripsMocks.updateTrip.mockRejectedValueOnce(new ConcurrentModificationError())
 
