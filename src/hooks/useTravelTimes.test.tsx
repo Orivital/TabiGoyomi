@@ -211,7 +211,7 @@ describe('useTravelTimes', () => {
     )
 
     let writeCount = 0
-    updateTripEventMock.mockImplementation(async (id, _updates, opts) => {
+    updateTripEventMock.mockImplementation(async (_id, _updates, opts) => {
       writeCount++
       if (writeCount === 1) {
         expect(opts.expectedUpdatedAt).toBe('2026-03-20T10:00:00.000Z')
