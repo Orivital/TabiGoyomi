@@ -74,7 +74,10 @@ describe('useTravelTimes', () => {
       driving: null,
     })
     getCachedTravelTimeMock.mockReturnValue(undefined)
-    updateTripEventMock.mockResolvedValue(undefined)
+    updateTripEventMock.mockResolvedValue({
+      id: 'from',
+      updated_at: '2026-03-20T10:00:01.000Z',
+    } as TripEvent)
   })
 
   afterEach(() => {
@@ -140,5 +143,38 @@ describe('useTravelTimes', () => {
     const request = getTravelTimeMock.mock.calls[0]?.[2]
     expect(request.arrivalTime).toBeInstanceOf(Date)
     expect(request.departureTime).toBeUndefined()
+  })
+
+  it('移動時間の DB 保存時は楽観的ロック用の expectedUpdatedAt を渡す', async () => {
+    const events = [
+      createEvent({
+        id: 'from',
+        location: 'A',
+        address: '東京都千代田区1-1-1',
+        travel_duration_minutes: null,
+        updated_at: '2026-03-20T10:00:00.000Z',
+      }),
+      createEvent({
+        id: 'to',
+        location: 'B',
+        address: '東京都港区2-2-2',
+      }),
+    ]
+
+    getTravelTimeMock.mockResolvedValue({
+      walking: 15,
+      transit: null,
+      driving: null,
+    })
+
+    renderHook(() => useTravelTimes(events, '2026-03-20'))
+
+    await waitFor(() => {
+      expect(updateTripEventMock).toHaveBeenCalledWith(
+        'from',
+        { travel_duration_minutes: 15 },
+        { expectedUpdatedAt: '2026-03-20T10:00:00.000Z' }
+      )
+    })
   })
 })

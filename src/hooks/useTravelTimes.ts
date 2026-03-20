@@ -18,6 +18,7 @@ export type TravelTimePair = {
 type EventPair = {
   fromEventId: string
   toEventId: string
+  fromUpdatedAt: string
   originAddress: string
   destinationAddress: string
   dbDurationMinutes: number | null
@@ -59,6 +60,7 @@ function buildPairs(events: TripEvent[]): EventPair[] {
       pairs.push({
         fromEventId: from.id,
         toEventId: to.id,
+        fromUpdatedAt: from.updated_at,
         originAddress: normalizeAddress(from.location, from.address),
         destinationAddress: normalizeAddress(to.location, to.address),
         dbDurationMinutes: from.travel_duration_minutes,
@@ -106,34 +108,43 @@ export function useTravelTimes(events: TripEvent[], dayDate?: string): TravelTim
     return buildPairs(events)
   }, [events])
 
-  const setModeForPair = useCallback((fromId: string, toId: string, mode: TravelMode) => {
-    // Optimistic local update
-    setLocalModes((prev) => {
-      const next = new Map(prev)
-      next.set(pairKey(fromId, toId), mode)
-      return next
-    })
-    // Clear fetched result so it re-fetches with new mode
-    setFetchedResults((prev) => {
-      const next = new Map(prev)
-      // Remove all mode variants for this pair
-      for (const m of ['walking', 'transit', 'driving'] as TravelMode[]) {
-        next.delete(resultKey(fromId, toId, m))
-      }
-      return next
-    })
-    // Persist to DB (fire-and-forget): update mode and clear cached duration
-    markSelfUpdate(fromId)
-    updateTripEvent(fromId, { travel_mode: mode, travel_duration_minutes: null }).catch(() => {
-      clearSelfUpdate(fromId)
-      // Revert on failure
+  const setModeForPair = useCallback(
+    (fromId: string, toId: string, mode: TravelMode) => {
+      const fromEvent = events.find((e) => e.id === fromId)
+      if (!fromEvent) return
+      // Optimistic local update
       setLocalModes((prev) => {
         const next = new Map(prev)
-        next.delete(pairKey(fromId, toId))
+        next.set(pairKey(fromId, toId), mode)
         return next
       })
-    })
-  }, [])
+      // Clear fetched result so it re-fetches with new mode
+      setFetchedResults((prev) => {
+        const next = new Map(prev)
+        // Remove all mode variants for this pair
+        for (const m of ['walking', 'transit', 'driving'] as TravelMode[]) {
+          next.delete(resultKey(fromId, toId, m))
+        }
+        return next
+      })
+      // Persist to DB (fire-and-forget): update mode and clear cached duration
+      markSelfUpdate(fromId)
+      updateTripEvent(
+        fromId,
+        { travel_mode: mode, travel_duration_minutes: null },
+        { expectedUpdatedAt: fromEvent.updated_at }
+      ).catch(() => {
+        clearSelfUpdate(fromId)
+        // Revert on failure
+        setLocalModes((prev) => {
+          const next = new Map(prev)
+          next.delete(pairKey(fromId, toId))
+          return next
+        })
+      })
+    },
+    [events]
+  )
 
   // Fetch uncached pairs asynchronously
   useEffect(() => {
@@ -180,7 +191,9 @@ export function useTravelTimes(events: TripEvent[], dayDate?: string): TravelTim
             const duration = result.value[mode]
             if (duration != null && mode !== 'transit') {
               markSelfUpdate(p.fromEventId)
-              updateTripEvent(p.fromEventId, { travel_duration_minutes: duration }).catch(() => {
+              updateTripEvent(p.fromEventId, { travel_duration_minutes: duration }, {
+                expectedUpdatedAt: p.fromUpdatedAt,
+              }).catch(() => {
                 clearSelfUpdate(p.fromEventId)
               })
             }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { fetchTripEvent, updateTripEvent, deleteTripEvent, uploadReceiptImage, deleteReceiptImage } from '../lib/trips'
+import { ConcurrentModificationError } from '../lib/errors'
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput'
 import { TimeInput } from '../components/TimeInput'
 import type { PlaceDetails } from '../lib/googleMaps'
@@ -33,6 +34,7 @@ export function EditEventPage() {
   const [existingReceiptUrl, setExistingReceiptUrl] = useState<string | null>(null)
   const [removeReceipt, setRemoveReceipt] = useState(false)
   const initialAddressRef = useRef('')
+  const loadedEventUpdatedAtRef = useRef('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -69,6 +71,7 @@ export function EditEventPage() {
         setWebsiteUrl(event.website_url ?? '')
         setGoogleMapsUrl(event.google_maps_url ?? '')
         setExistingReceiptUrl(event.receipt_image_url ?? null)
+        loadedEventUpdatedAtRef.current = event.updated_at
         if (event.phone || event.address || event.opening_hours || event.website_url || event.google_maps_url) {
           setShowPlaceDetails(true)
           setIsPlaceDetailsOpen(true)
@@ -101,33 +104,48 @@ export function EditEventPage() {
       setError(null)
       const costNum = cost.trim() ? parseInt(cost, 10) : null
       const addressChanged = (address.trim() || null) !== (initialAddressRef.current.trim() || null)
-      await updateTripEvent(eventId, {
-        title: title.trim(),
-        location: locationInput.trim() || undefined,
-        start_time: startTime || undefined,
-        end_time: endTime || undefined,
-        description: description.trim() || undefined,
-        cost: costNum !== null && isNaN(costNum) ? null : costNum,
-        is_reserved: isReserved,
-        is_settled: isSettled,
-        is_reservation_not_needed: isReservationNotNeeded,
-        phone: phone.trim() || null,
-        address: address.trim() || null,
-        opening_hours: openingHours.trim() || null,
-        website_url: websiteUrl.trim() || null,
-        google_maps_url: googleMapsUrl.trim() || null,
-        // 住所変更時はキャッシュ済み移動時間をクリア（再取得させる）
-        ...(addressChanged ? { travel_duration_minutes: null } : {}),
-      })
+      const updatedEvent = await updateTripEvent(
+        eventId,
+        {
+          title: title.trim(),
+          location: locationInput.trim() || undefined,
+          start_time: startTime || undefined,
+          end_time: endTime || undefined,
+          description: description.trim() || undefined,
+          cost: costNum !== null && isNaN(costNum) ? null : costNum,
+          is_reserved: isReserved,
+          is_settled: isSettled,
+          is_reservation_not_needed: isReservationNotNeeded,
+          phone: phone.trim() || null,
+          address: address.trim() || null,
+          opening_hours: openingHours.trim() || null,
+          website_url: websiteUrl.trim() || null,
+          google_maps_url: googleMapsUrl.trim() || null,
+          // 住所変更時はキャッシュ済み移動時間をクリア（再取得させる）
+          ...(addressChanged ? { travel_duration_minutes: null } : {}),
+        },
+        { expectedUpdatedAt: loadedEventUpdatedAtRef.current }
+      )
+      loadedEventUpdatedAtRef.current = updatedEvent.updated_at
       // 予約明細画像の処理
       if (receiptFile) {
-        await uploadReceiptImage(eventId, receiptFile)
+        const receiptResult = await uploadReceiptImage(eventId, receiptFile, {
+          expectedUpdatedAt: loadedEventUpdatedAtRef.current,
+        })
+        loadedEventUpdatedAtRef.current = receiptResult.updatedAt
       } else if (removeReceipt && existingReceiptUrl) {
-        await deleteReceiptImage(eventId)
+        const delResult = await deleteReceiptImage(eventId, {
+          expectedUpdatedAt: loadedEventUpdatedAtRef.current,
+        })
+        loadedEventUpdatedAtRef.current = delResult.updatedAt
       }
       navigate(`/trips/${tripId}`, { state: backToTripState })
     } catch (err) {
-      setError(err instanceof Error ? err.message : '更新に失敗しました')
+      if (err instanceof ConcurrentModificationError) {
+        setError(err.message)
+      } else {
+        setError(err instanceof Error ? err.message : '更新に失敗しました')
+      }
     } finally {
       setIsSubmitting(false)
     }

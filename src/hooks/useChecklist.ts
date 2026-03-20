@@ -6,6 +6,7 @@ import {
   updateChecklistItem,
   deleteChecklistItem,
 } from '../lib/trips'
+import { ConcurrentModificationError } from '../lib/errors'
 import type { TripChecklistItem } from '../types/database'
 
 export function useChecklist(tripId: string | null) {
@@ -104,10 +105,23 @@ export function useChecklist(tripId: string | null) {
     [tripId, items, load]
   )
 
-  const toggleItem = useCallback(async (id: string, isChecked: boolean) => {
-    await updateChecklistItem(id, { is_checked: !isChecked })
-    await load()
-  }, [load])
+  const toggleItem = useCallback(
+    async (id: string, isChecked: boolean) => {
+      const item = items.find((i) => i.id === id)
+      if (!item) return
+      try {
+        await updateChecklistItem(id, { is_checked: !isChecked }, { expectedUpdatedAt: item.updated_at })
+        await load()
+      } catch (e) {
+        if (e instanceof ConcurrentModificationError) {
+          await load()
+          return
+        }
+        console.error('Failed to toggle checklist item:', e)
+      }
+    },
+    [load, items]
+  )
 
   const removeItem = useCallback(async (id: string) => {
     await deleteChecklistItem(id)

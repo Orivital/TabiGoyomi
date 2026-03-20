@@ -93,4 +93,35 @@ describe('useChecklist', () => {
       table: 'trip_checklist_items',
     })
   })
+
+  it('toggleItem は楽観的ロック用に expectedUpdatedAt を渡す', async () => {
+    fetchChecklistItemsMock.mockResolvedValue([
+      {
+        id: 'item-1',
+        trip_id: 'trip-a',
+        title: '荷造り',
+        is_checked: false,
+        sort_order: 0,
+        created_at: '2026-01-01T00:00:00.000Z',
+        updated_at: '2026-01-02T00:00:00.000Z',
+      },
+    ])
+    updateChecklistItemMock.mockResolvedValue(undefined)
+
+    const { result } = renderHook(() => useChecklist('trip-a'))
+
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      await result.current.toggleItem('item-1', false)
+    })
+
+    expect(updateChecklistItemMock).toHaveBeenCalledWith(
+      'item-1',
+      { is_checked: true },
+      { expectedUpdatedAt: '2026-01-02T00:00:00.000Z' }
+    )
+  })
 })
