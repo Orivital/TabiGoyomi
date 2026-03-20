@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import { debugLog, captureError } from '../lib/debugLog'
 import { detectInAppBrowser } from '../lib/detectInAppBrowser'
 import { BrandLogo } from './BrandLogo'
+import { LoadingScreen } from './LoadingScreen'
 
 type AuthGuardProps = {
   children: React.ReactNode
@@ -52,11 +53,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   }
 
   if (isLoading) {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center' }}>
-        <p>読み込み中...</p>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   if (!user) {
