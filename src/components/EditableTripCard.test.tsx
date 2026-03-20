@@ -116,4 +116,41 @@ describe('EditableTripCard 保存と楽観ロック', () => {
     expect(tripsMocks.moveTripDayEventsToDate).not.toHaveBeenCalled()
     expect(tripsMocks.deleteOutOfRangeTripDays).not.toHaveBeenCalled()
   })
+
+  it('updateTrip 成功後に deleteOutOfRangeTripDays が失敗しても、再保存では直前の updated_at で楽観ロックする', async () => {
+    const user = userEvent.setup()
+    const afterFirstUpdate = '2026-01-02T00:00:00.000Z'
+    tripsMocks.updateTrip.mockResolvedValue({
+      ...baseTrip,
+      title: '北海道',
+      updated_at: afterFirstUpdate,
+    })
+    tripsMocks.deleteOutOfRangeTripDays
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(undefined)
+
+    renderCard()
+
+    await user.click(screen.getByRole('button', { name: '編集' }))
+    await user.click(screen.getByRole('button', { name: '保存' }))
+
+    await waitFor(() => {
+      expect(tripsMocks.deleteOutOfRangeTripDays).toHaveBeenCalledTimes(1)
+    })
+
+    await user.click(screen.getByRole('button', { name: '保存' }))
+
+    await waitFor(() => {
+      expect(tripsMocks.updateTrip).toHaveBeenCalledTimes(2)
+    })
+    expect(tripsMocks.updateTrip).toHaveBeenLastCalledWith(
+      'trip-1',
+      expect.objectContaining({
+        title: '北海道',
+        start_date: '2026-03-01',
+        end_date: '2026-03-05',
+      }),
+      { expectedUpdatedAt: afterFirstUpdate }
+    )
+  })
 })
