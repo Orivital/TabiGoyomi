@@ -174,9 +174,6 @@ export async function uploadTripThumbnail(
     throw new Error('ファイルサイズは5MB以下にしてください')
   }
 
-  // 既存ファイルを削除
-  await removeTripThumbnailFile(tripId)
-
   const ext = EXTENSION_MAP[file.type] || 'jpg'
   const filePath = `${tripId}/thumbnail.${ext}`
 
@@ -201,13 +198,19 @@ export async function uploadTripThumbnail(
     .select()
     .single()
 
-  const row = throwIfConcurrentOrPassthrough(updateResult) as Trip
+  let row: Trip
+  try {
+    row = throwIfConcurrentOrPassthrough(updateResult) as Trip
+  } catch (e) {
+    await supabase.storage.from(THUMBNAIL_BUCKET).remove([filePath])
+    throw e
+  }
+
+  await removeTripThumbnailVariantsExcept(tripId, ext)
   return { publicUrl: urlData.publicUrl, updatedAt: row.updated_at }
 }
 
 export async function deleteTripThumbnail(tripId: string, options: OptimisticLockOptions): Promise<{ updatedAt: string }> {
-  await removeTripThumbnailFile(tripId)
-
   const updateResult = await supabase
     .from('trips')
     .update({
@@ -220,7 +223,17 @@ export async function deleteTripThumbnail(tripId: string, options: OptimisticLoc
     .single()
 
   const row = throwIfConcurrentOrPassthrough(updateResult) as Trip
+  await removeTripThumbnailFile(tripId)
   return { updatedAt: row.updated_at }
+}
+
+async function removeTripThumbnailVariantsExcept(tripId: string, keepExtension: string) {
+  const extensions = ['jpg', 'png', 'webp']
+  const paths = extensions
+    .filter((e) => e !== keepExtension)
+    .map((e) => `${tripId}/thumbnail.${e}`)
+  if (paths.length === 0) return
+  await supabase.storage.from(THUMBNAIL_BUCKET).remove(paths)
 }
 
 async function removeTripThumbnailFile(tripId: string) {
@@ -401,10 +414,9 @@ export async function updateTripEvent(
 }
 
 export async function deleteTripEvent(id: string) {
-  // ストレージからメディアファイルをクリーンアップ
-  await removeReceiptImageFile(id)
   const { error } = await supabase.from('trip_events').delete().eq('id', id)
   if (error) throw error
+  await removeReceiptImageFile(id)
 }
 
 const RECEIPT_BUCKET = 'receipt-images'
@@ -421,9 +433,6 @@ export async function uploadReceiptImage(
   if (file.size > RECEIPT_MAX_FILE_SIZE) {
     throw new Error('ファイルサイズは10MB以下にしてください')
   }
-
-  // 既存ファイルを削除
-  await removeReceiptImageFile(eventId)
 
   const ext = EXTENSION_MAP[file.type] || 'jpg'
   const filePath = `${eventId}/receipt.${ext}`
@@ -448,13 +457,19 @@ export async function uploadReceiptImage(
     .select()
     .single()
 
-  const row = throwIfConcurrentOrPassthrough(updateResult) as TripEvent
+  let row: TripEvent
+  try {
+    row = throwIfConcurrentOrPassthrough(updateResult) as TripEvent
+  } catch (e) {
+    await supabase.storage.from(RECEIPT_BUCKET).remove([filePath])
+    throw e
+  }
+
+  await removeReceiptImageVariantsExcept(eventId, ext)
   return { publicUrl: urlData.publicUrl, updatedAt: row.updated_at }
 }
 
 export async function deleteReceiptImage(eventId: string, options: OptimisticLockOptions): Promise<{ updatedAt: string }> {
-  await removeReceiptImageFile(eventId)
-
   const updateResult = await supabase
     .from('trip_events')
     .update({
@@ -467,7 +482,17 @@ export async function deleteReceiptImage(eventId: string, options: OptimisticLoc
     .single()
 
   const row = throwIfConcurrentOrPassthrough(updateResult) as TripEvent
+  await removeReceiptImageFile(eventId)
   return { updatedAt: row.updated_at }
+}
+
+async function removeReceiptImageVariantsExcept(eventId: string, keepExtension: string) {
+  const extensions = ['jpg', 'png', 'webp']
+  const paths = extensions
+    .filter((e) => e !== keepExtension)
+    .map((e) => `${eventId}/receipt.${e}`)
+  if (paths.length === 0) return
+  await supabase.storage.from(RECEIPT_BUCKET).remove(paths)
 }
 
 async function removeReceiptImageFile(eventId: string) {
