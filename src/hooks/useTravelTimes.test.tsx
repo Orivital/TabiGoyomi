@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useTravelTimes } from './useTravelTimes'
 import type { TripEvent } from '../types/database'
@@ -175,6 +175,66 @@ describe('useTravelTimes', () => {
         { travel_duration_minutes: 15 },
         { expectedUpdatedAt: '2026-03-20T10:00:00.000Z' }
       )
+    })
+  })
+
+  it('モード保存成功後の移動時間保存は直前の updated_at を expected に使う', async () => {
+    const events = [
+      createEvent({
+        id: 'from',
+        location: 'A',
+        address: '東京都千代田区1-1-1',
+        travel_mode: 'walking',
+        travel_duration_minutes: 15,
+        updated_at: '2026-03-20T10:00:00.000Z',
+      }),
+      createEvent({
+        id: 'to',
+        location: 'B',
+        address: '東京都港区2-2-2',
+      }),
+    ]
+
+    getTravelTimeMock.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(
+            () =>
+              resolve({
+                walking: 15,
+                transit: null,
+                driving: 22,
+              }),
+            0
+          )
+        })
+    )
+
+    let writeCount = 0
+    updateTripEventMock.mockImplementation(async (id, _updates, opts) => {
+      writeCount++
+      if (writeCount === 1) {
+        expect(opts.expectedUpdatedAt).toBe('2026-03-20T10:00:00.000Z')
+        return {
+          ...createEvent({ id: 'from' }),
+          updated_at: '2026-03-20T10:00:01.000Z',
+        } as TripEvent
+      }
+      expect(opts.expectedUpdatedAt).toBe('2026-03-20T10:00:01.000Z')
+      return {
+        ...createEvent({ id: 'from' }),
+        updated_at: '2026-03-20T10:00:02.000Z',
+      } as TripEvent
+    })
+
+    const { result } = renderHook(() => useTravelTimes(events, '2026-03-20'))
+
+    await act(async () => {
+      result.current[0]?.setMode('driving')
+    })
+
+    await waitFor(() => {
+      expect(updateTripEventMock).toHaveBeenCalledTimes(2)
     })
   })
 })
