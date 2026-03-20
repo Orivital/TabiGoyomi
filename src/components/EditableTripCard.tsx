@@ -174,8 +174,7 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
         setPendingSave({ title: title.trim(), startDate, endDate: adjustedEndDate })
         setIsResolving(true)
       } else {
-        // 影響なし → そのまま保存
-        await deleteOutOfRangeTripDays(trip.id, startDate, adjustedEndDate)
+        // 影響なし → 楽観ロックで旅程を先に更新し、成功後に範囲外の空日のみ削除（競合時に日だけ消える事故を防ぐ）
         let token = expectedTripUpdatedAtRef.current
         const updatedTrip = await updateTrip(
           trip.id,
@@ -187,6 +186,7 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
           { expectedUpdatedAt: token }
         )
         token = updatedTrip.updated_at
+        await deleteOutOfRangeTripDays(trip.id, startDate, adjustedEndDate)
         if (thumbnailFile) {
           const thumb = await uploadTripThumbnail(trip.id, thumbnailFile, { expectedUpdatedAt: token })
           token = thumb.updatedAt
@@ -222,6 +222,19 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
       setIsSubmitting(true)
       setError(null)
 
+      // 先に楽観ロックで旅程を更新（競合時に日・イベントだけ先に壊れるのを防ぐ）
+      let token = expectedTripUpdatedAtRef.current
+      const updatedTrip = await updateTrip(
+        trip.id,
+        {
+          title: pendingSave.title,
+          start_date: pendingSave.startDate,
+          end_date: pendingSave.endDate,
+        },
+        { expectedUpdatedAt: token }
+      )
+      token = updatedTrip.updated_at
+
       // 各日のアクションを実行
       for (const day of outOfRangeDays) {
         const action = dayActions[day.id]
@@ -235,19 +248,6 @@ export function EditableTripCard({ trip, totalCost, onUpdated }: Props) {
 
       // 残った空の範囲外日を削除
       await deleteOutOfRangeTripDays(trip.id, pendingSave.startDate, pendingSave.endDate)
-
-      // トリップ自体を更新
-      let token = expectedTripUpdatedAtRef.current
-      const updatedTrip = await updateTrip(
-        trip.id,
-        {
-          title: pendingSave.title,
-          start_date: pendingSave.startDate,
-          end_date: pendingSave.endDate,
-        },
-        { expectedUpdatedAt: token }
-      )
-      token = updatedTrip.updated_at
       if (thumbnailFile) {
         const thumb = await uploadTripThumbnail(trip.id, thumbnailFile, { expectedUpdatedAt: token })
         token = thumb.updatedAt
