@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, type ComponentType } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthGuard } from './components/AuthGuard'
+import { LoadingScreen } from './components/LoadingScreen'
 import { clearVitePreloadRecovery } from './lib/vitePreloadRecovery'
 
 function lazyPage<T extends string>(
@@ -20,14 +21,6 @@ const EditEventPage = lazyPage(() => import('./pages/EditEventPage'), 'EditEvent
 const EventMemoriesPage = lazyPage(() => import('./pages/EventMemoriesPage'), 'EventMemoriesPage')
 const NotFoundPage = lazyPage(() => import('./pages/NotFoundPage'), 'NotFoundPage')
 
-function RouteLoadingFallback() {
-  return (
-    <div className="page">
-      <p>読み込み中...</p>
-    </div>
-  )
-}
-
 function PreloadRecoveryReset() {
   useEffect(() => {
     clearVitePreloadRecovery(window)
@@ -44,7 +37,7 @@ function App() {
           path="/*"
           element={
             <AuthGuard>
-              <Suspense fallback={<RouteLoadingFallback />}>
+              <Suspense fallback={<LoadingScreen />}>
                 <>
                   <Routes>
                     <Route path="/" element={<TripListPage />} />
