@@ -117,7 +117,7 @@ describe('EditableTripCard 保存と楽観ロック', () => {
     expect(tripsMocks.deleteOutOfRangeTripDays).not.toHaveBeenCalled()
   })
 
-  it('updateTrip 成功後に deleteOutOfRangeTripDays が失敗しても、再保存では直前の updated_at で楽観ロックする', async () => {
+  it('updateTrip 成功後に範囲外日の一括削除が失敗しても、再保存では直前の updated_at で楽観ロックする', async () => {
     const user = userEvent.setup()
     const afterFirstUpdate = '2026-01-02T00:00:00.000Z'
     tripsMocks.updateTrip.mockResolvedValue({
