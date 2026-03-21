@@ -45,9 +45,9 @@ trap cleanup EXIT INT TERM
 
 pnpm exec supabase db reset --local
 
-psql -q postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+psql -v ON_ERROR_STOP=1 -q postgresql://postgres:postgres@127.0.0.1:54322/postgres \
   -f "$TRUNCATE_SQL"
 
-psql -q postgresql://postgres:postgres@127.0.0.1:54322/postgres -f "$DUMP"
+psql -v ON_ERROR_STOP=1 -q postgresql://postgres:postgres@127.0.0.1:54322/postgres -f "$DUMP"
 
 echo 'DB sync complete'

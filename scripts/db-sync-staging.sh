@@ -57,10 +57,10 @@ trap cleanup EXIT INT TERM
 "${ROOT}/scripts/dump-prod-data.sh" "$DUMP"
 
 env PGPASSWORD="$SUPABASE_STAGING_DB_PASSWORD" PGSSLMODE=require \
-  psql -h "$STAGING_HOST" -p 5432 -U "postgres.${STAGING_REF}" -d postgres \
+  psql -v ON_ERROR_STOP=1 -h "$STAGING_HOST" -p 5432 -U "postgres.${STAGING_REF}" -d postgres \
   -f "$TRUNCATE_SQL"
 
 env PGPASSWORD="$SUPABASE_STAGING_DB_PASSWORD" PGSSLMODE=require \
-  psql -h "$STAGING_HOST" -p 5432 -U "postgres.${STAGING_REF}" -d postgres -q -f "$DUMP"
+  psql -v ON_ERROR_STOP=1 -h "$STAGING_HOST" -p 5432 -U "postgres.${STAGING_REF}" -d postgres -q -f "$DUMP"
 
 echo 'Staging sync complete'
