@@ -24,6 +24,16 @@ set -a
 . ./.env.local
 set +a
 
+missing_vars=()
+if [ -z "${SUPABASE_PROD_DB_PASSWORD:-}" ]; then
+  missing_vars+=(SUPABASE_PROD_DB_PASSWORD)
+fi
+if [ "${#missing_vars[@]}" -ne 0 ]; then
+  echo "After sourcing .env.local, required variable(s) are unset or empty: ${missing_vars[*]}" >&2
+  echo "Set non-empty values for the listed names in .env.local. (A missing file is reported before sourcing; a .env.local syntax error exits during sourcing before this check.)" >&2
+  exit 1
+fi
+
 DUMP="$(mktemp "${TMPDIR:-/tmp}/tabigoyomi-prod-dump.XXXXXX.sql")"
 chmod 600 "$DUMP"
 cleanup() {
