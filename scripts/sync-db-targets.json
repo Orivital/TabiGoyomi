@@ -1,0 +1,10 @@
+{
+  "production": {
+    "projectRef": "ssyeychimkqjhzvwucap",
+    "poolerHost": "aws-1-ap-northeast-2.pooler.supabase.com"
+  },
+  "staging": {
+    "projectRef": "fowxrnfttrnvogssaqef",
+    "poolerHost": "aws-0-ap-northeast-1.pooler.supabase.com"
+  }
+}

@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# 本番からデータダンプ → ローカル Supabase をリセットして取り込む。
+# ダンプファイルは mktemp + chmod 600、終了時に削除（本番データの取り残しを防ぐ）。
+
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+TRUNCATE_SQL="${ROOT}/scripts/db-sync-truncate-app-data.sql"
+if [ ! -f "$TRUNCATE_SQL" ]; then
+  echo "Missing ${TRUNCATE_SQL}. Restore it from the repository." >&2
+  exit 1
+fi
+
+if [ ! -f .env.local ]; then
+  echo "db:sync requires .env.local with SUPABASE_PROD_DB_PASSWORD (and other local dev vars)." >&2
+  echo "Copy from .env.example and fill in values." >&2
+  exit 1
+fi
+
+set -a
+# shellcheck disable=SC1091
+. ./.env.local
+set +a
+
+DUMP="$(mktemp "${TMPDIR:-/tmp}/tabigoyomi-prod-dump.XXXXXX.sql")"
+chmod 600 "$DUMP"
+cleanup() {
+  rm -f "$DUMP"
+}
+trap cleanup EXIT INT TERM
+
+"${ROOT}/scripts/dump-prod-data.sh" "$DUMP"
+
+pnpm exec supabase db reset --local
+
+psql -q postgresql://postgres:postgres@127.0.0.1:54322/postgres \
+  -f "$TRUNCATE_SQL"
+
+psql -q postgresql://postgres:postgres@127.0.0.1:54322/postgres -f "$DUMP"
+
+echo 'DB sync complete'

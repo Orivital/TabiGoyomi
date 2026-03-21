@@ -32,10 +32,30 @@ pnpm install
 devbox run supabase:start
 ```
 
+**前提:** 初回から `.env.local` が必要です（最後に本番同期 `db:sync` が走るため）。
+無い場合は先に `.env.example` をコピーして作成してください。
+
 `devbox run supabase:start` は `supabase start` の後に `supabase status -o env`
 から現在の `API_URL` / `PUBLISHABLE_KEY` / `ANON_KEY` を `.env.local` へ同期します。
 ローカル Realtime は stale な鍵で不安定になるため、`.env.local` の
 `VITE_SUPABASE_PUBLISHABLE_KEY` は常にこの同期結果を使ってください。
+
+**本番データ同期（`db:sync`）について:** ダンプ元は **`supabase link` ではなく**
+`scripts/sync-db-targets.json` の **`production`** に固定されています。
+`db:sync-staging` は同ファイルの **`staging`** を書き込み先に使います（本番からダンプして Staging に流し込み）。
+`.env.local` の `SUPABASE_PROD_DB_PASSWORD` は本番 DB 用、`SUPABASE_STAGING_DB_PASSWORD` は Staging 用です。
+
+一時ダンプは **`mktemp`・パーミッション 600・終了時削除** し、`/tmp/prod_data.sql` のように固定パスに本番データを残しません。
+
+投入前の **`TRUNCATE` 対象テーブル**は `scripts/db-sync-truncate-app-data.sql` に一本化しています（変更時は `src/lib/syncDbTargets.test.ts` も更新）。
+
+接続先を変えるときは `sync-db-targets.json` を編集するか、
+`SUPABASE_PROD_PROJECT_REF` / `SUPABASE_PROD_POOLER_HOST`、
+`SUPABASE_STAGING_PROJECT_REF` / `SUPABASE_STAGING_POOLER_HOST` で上書きしてください。
+
+`scripts/sync-db-targets.json` や **`db-sync-truncate-app-data.sql`** を変えたら **`src/lib/syncDbTargets.test.ts` の期待値も合わせて更新**してください。
+
+`pnpm db:push` などマイグレーション用の **`supabase link` は別**です（リンク先は作業内容に合わせて Staging / Production を選びます）。
 
 手動で起動した場合も、開発サーバー起動前に以下を実行してください。
 
