@@ -45,9 +45,13 @@ devbox run supabase:start
 `db:sync-staging` は同ファイルの **`staging`** を書き込み先に使います（本番からダンプして Staging に流し込み）。
 `.env.local` の `SUPABASE_PROD_DB_PASSWORD` は本番 DB 用、`SUPABASE_STAGING_DB_PASSWORD` は Staging 用です。
 
+ローカル本番同期の**既定の実行環境は devbox** です（`devbox run db:sync`）。devbox の `postgresql` パッケージにより **`psql` が PATH に入る**想定です。  
+`db:sync` は **`supabase db reset` は行わず**、未適用の **`supabase migration up --local`** のあと、`db-sync-truncate-app-data.sql` でアプリ用テーブルを空にしてから本番ダンプを投入します（スキーマ追加だけなら reset 不要）。ローカル DB が壊れているときだけ、手動で `supabase db reset` を検討してください。  
+**devbox 外**で `./scripts/db-sync-local.sh` を直接実行するとホストに `psql` が無いことがあり、その場合は `supabase start` 済みの Docker コンテナ `supabase_db_*` へ `docker exec` して流し込むフォールバックがあります（`supabase db query -f` は複文 SQL のダンプに使えないため）。
+
 一時ダンプは **`mktemp`・パーミッション 600・終了時削除** し、`/tmp/prod_data.sql` のように固定パスに本番データを残しません。
 
-投入前の **`TRUNCATE` 対象テーブル**は `scripts/db-sync-truncate-app-data.sql` に一本化しています（変更時は `src/lib/syncDbTargets.test.ts` も更新）。
+投入前の **`TRUNCATE` 対象**は `scripts/db-sync-truncate-app-data.sql` に一本化しています（アプリ用テーブルに加え、`auth.users` と `auth.flow_state` を空にして認証系データの主キー衝突を防ぎます。認証側は GoTrue がシーケンス所有者のため `RESTART IDENTITY` は付けません）。本番ダンプ側も `dump-prod-data.sh` で `auth.flow_state` を除外。変更時は `src/lib/syncDbTargets.test.ts` も更新してください。
 
 接続先を変えるときは `sync-db-targets.json` を編集するか、
 `SUPABASE_PROD_PROJECT_REF` / `SUPABASE_PROD_POOLER_HOST`、
@@ -160,6 +164,22 @@ pnpm build
 4. Vercel にも同じ環境変数を設定
 
 API キー未設定の場合は、通常の手動テキスト入力にフォールバックします。
+
+## ドキュメント
+
+- [プッシュ通知・旅程リマインダー要件](docs/push-reminders-requirements.md)（[#26](https://github.com/Orivital/TabiGoyomi/issues/26)）
+
+### 旅程リマインダー（Web Push）の有効化
+
+1. **VAPID 鍵**: `npx web-push generate-vapid-keys` で鍵ペアを生成する。
+2. **フロント**: `.env` / Vercel に `VITE_VAPID_PUBLIC_KEY`（公開鍵のみ）を設定する。
+3. **マイグレーション**: `pnpm db:push` または Dashboard で `supabase/migrations/20260321120000_push_reminders.sql` を適用する。
+4. **Edge Function `send-trip-reminders`**: `supabase functions deploy send-trip-reminders` でデプロイし、次をシークレットに設定する。
+   - `CRON_SECRET`（任意の長いランダム文字列。呼び出し時 `Authorization: Bearer <CRON_SECRET>`）
+   - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT`（例: `mailto:you@example.com`）
+   - `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY`（CLI デプロイ時は自動設定される場合あり）
+5. **定期実行**: 1 分毎程度で Edge Function を HTTP 起動する（例: Supabase `pg_cron` + `pg_net`、`curl`、外部 Cron）。遅延が大きいと通知がずれる。
+6. **プッシュ購読**と **`user_reminder_preferences.reminders_enabled`**（リマインダー全体 ON）を有効にする。一覧には設定 UI が無いため、開発時はコンソールや Supabase SQL / Dashboard で登録するか、別途 UI を足す。各予定の編集画面で開始／終了リマインダーを調整する。
 
 ## トラブルシューティング
 
