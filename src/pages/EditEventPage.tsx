@@ -45,6 +45,7 @@ export function EditEventPage() {
   const [remindEndEnabled, setRemindEndEnabled] = useState(true)
   const [remindStartMins, setRemindStartMins] = useState(5)
   const [remindEndMins, setRemindEndMins] = useState(5)
+  const [remindEndAtEnabled, setRemindEndAtEnabled] = useState(false)
 
   useEffect(() => {
     return () => {
@@ -104,6 +105,7 @@ export function EditEventPage() {
         if (p) {
           setRemindStartEnabled(p.remind_start_enabled)
           setRemindEndEnabled(p.remind_end_enabled)
+          setRemindEndAtEnabled(p.remind_end_at_enabled)
           setRemindStartMins(p.remind_start_minutes_before)
           setRemindEndMins(p.remind_end_minutes_before)
         }
@@ -178,7 +180,7 @@ export function EditEventPage() {
           trip_event_id: eventId,
           remind_start_enabled: remindStartEnabled,
           remind_end_enabled: remindEndEnabled,
-          remind_end_at_enabled: false,
+          remind_end_at_enabled: remindEndAtEnabled,
           remind_start_minutes_before: clampM(remindStartMins),
           remind_end_minutes_before: clampM(remindEndMins),
         })
