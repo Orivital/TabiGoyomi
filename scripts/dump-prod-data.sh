@@ -53,6 +53,7 @@ DB_URL="postgresql://${ENC_USER}:${ENC_PW}@${POOLER_HOST}:5432/postgres?sslmode=
 
 pnpm exec supabase db dump --data-only \
   --db-url "$DB_URL" \
+  -x auth.flow_state \
   -x storage.buckets \
   -x storage.objects \
   -x storage.s3_multipart_uploads \

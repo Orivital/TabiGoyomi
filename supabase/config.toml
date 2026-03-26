@@ -258,6 +258,9 @@ policy = "oneshot"
 inspector_port = 8083
 
 # Use these configurations to customize your Edge Function.
+[functions.send-trip-reminders]
+verify_jwt = false
+
 # [functions.MY_FUNCTION_NAME]
 # enabled = true
 # verify_jwt = true

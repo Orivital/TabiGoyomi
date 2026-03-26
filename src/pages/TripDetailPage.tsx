@@ -1,5 +1,5 @@
 import { useMemo, useLayoutEffect, useEffect, useState, useRef } from 'react'
-import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
+import { useParams, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { formatDateWithWeekday, formatDateWithWeekdayWithoutYear, formatTimeWithoutSeconds, compareTimeStrings } from '../lib/dateFormat'
 import { useTripDetail } from '../hooks/useTripDetail'
 import { useCarousel } from '../hooks/useCarousel'
@@ -8,14 +8,22 @@ import { DayIndicator } from '../components/DayIndicator'
 import { TripChecklist } from '../components/TripChecklist'
 import { TravelTimeIndicator } from '../components/TravelTimeIndicator'
 import type { TripDetailLocationState } from '../types/navigation'
+import { resolveTripDetailFocus } from '../lib/tripDetailFocus'
 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const dayFromQuery = searchParams.get('day')
+  const eventFromQuery = searchParams.get('event')
   const { trip, tripDays, isLoading, error } = useTripDetail(id ?? null)
   const locationState = location.state as TripDetailLocationState | null
-  const shouldRestoreFocus = Boolean(locationState?.focusDayDate)
+  const focus = useMemo(
+    () => resolveTripDetailFocus(locationState, dayFromQuery, eventFromQuery),
+    [locationState, dayFromQuery, eventFromQuery],
+  )
+  const shouldRestoreFocus = Boolean(focus.focusDayDate)
   const [isRestoringFocus, setIsRestoringFocus] = useState(shouldRestoreFocus)
   const hasScrolledToEventRef = useRef(false)
 
@@ -59,11 +67,11 @@ export function TripDetailPage() {
   }, [trip, tripDays])
 
   const initialFocusIndex = useMemo(() => {
-    const focusDayDate = locationState?.focusDayDate
+    const focusDayDate = focus.focusDayDate
     if (!focusDayDate || daysInRange.length === 0) return 0
     const index = daysInRange.findIndex((day) => day.day_date === focusDayDate)
     return index >= 0 ? index : 0
-  }, [daysInRange, locationState?.focusDayDate])
+  }, [daysInRange, focus.focusDayDate])
 
   const { containerRef, activeIndex, scrollTo, handleScroll } = useCarousel(
     daysInRange.length,
@@ -96,10 +104,7 @@ export function TripDetailPage() {
     const currentDayDate = daysInRange[activeIndex]?.day_date
     if (!currentDayDate) return
 
-    if (
-      locationState?.focusDayDate === currentDayDate &&
-      !locationState?.focusEventId
-    ) {
+    if (focus.focusDayDate === currentDayDate && !focus.focusEventId) {
       return
     }
 
@@ -110,12 +115,12 @@ export function TripDetailPage() {
   }, [
     activeIndex,
     daysInRange,
+    focus.focusDayDate,
+    focus.focusEventId,
     isLoading,
     isRestoringFocus,
     location.pathname,
     location.search,
-    locationState?.focusDayDate,
-    locationState?.focusEventId,
     navigate,
   ])
 
@@ -123,7 +128,7 @@ export function TripDetailPage() {
   useLayoutEffect(() => {
     if (isRestoringFocus || isLoading) return
     if (hasScrolledToEventRef.current) return
-    const focusEventId = locationState?.focusEventId
+    const focusEventId = focus.focusEventId
     if (!focusEventId) return
     hasScrolledToEventRef.current = true
 
@@ -139,7 +144,7 @@ export function TripDetailPage() {
     const slideRect = slideEl.getBoundingClientRect()
     const eventRect = eventEl.getBoundingClientRect()
     slideEl.scrollTop = eventRect.top - slideRect.top - slideRect.height / 2 + eventRect.height / 2
-  }, [isRestoringFocus, isLoading, locationState?.focusEventId, containerRef])
+  }, [isRestoringFocus, isLoading, focus.focusEventId, containerRef])
 
   const dayTabs = daysInRange.map((day, i) => ({
     dayDate: day.day_date,

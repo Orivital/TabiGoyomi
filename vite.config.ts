@@ -7,6 +7,17 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globIgnores: ['**/header-logo.png'],
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module',
+      },
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
@@ -29,31 +40,6 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
-          },
-        ],
-      },
-      workbox: {
-        // workbox-build 7.4.0 が外部 runtime 分割時に Rollup へ不正な
-        // manualChunks オプションを渡し警告を出すため、runtime を SW に内包する。
-        inlineWorkboxRuntime: true,
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        globIgnores: ['**/header-logo.png'],
-        runtimeCaching: [
-          {
-            // 認証エンドポイント (/auth/v1/) は絶対にキャッシュしない
-            urlPattern: /^https:\/\/[^/]+\.supabase\.co\/(?!auth\/v1\/).+/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-cache',
-              expiration: {
-                maxEntries: 32,
-                maxAgeSeconds: 24 * 60 * 60,
-              },
-              cacheableResponse: {
-                statuses: [0, 200],
-              },
-              networkTimeoutSeconds: 10,
-            },
           },
         ],
       },

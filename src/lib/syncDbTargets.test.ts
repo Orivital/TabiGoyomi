@@ -35,7 +35,10 @@ describe('db-sync-truncate-app-data.sql', () => {
       'utf8',
     )
     expect(sql).toMatch(
-      /TRUNCATE\s+trip_events,\s*trip_days,\s*trips,\s*allowed_users,\s*event_memories\s+RESTART\s+IDENTITY\s+CASCADE\s*;/,
+      /TRUNCATE\s+auth\.users,\s*auth\.flow_state\s+CASCADE\s*;/,
+    )
+    expect(sql).toMatch(
+      /TRUNCATE\s+reminder_notifications_sent,\s*trip_event_reminder_user_prefs,\s*push_subscriptions,\s*user_reminder_preferences,\s*trip_events,\s*trip_days,\s*trips,\s*event_memories,\s*allowed_users\s+RESTART\s+IDENTITY\s+CASCADE\s*;/,
     )
   })
 })
