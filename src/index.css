@@ -217,6 +217,111 @@ body {
   cursor: not-allowed;
 }
 
+.reminder-settings {
+  margin: 1rem 0 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-bg) 92%, var(--color-border));
+}
+
+.reminder-settings__title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.reminder-settings__hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
+.reminder-settings__warn {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-error);
+}
+
+.reminder-settings__actions {
+  margin-bottom: 0.75rem;
+}
+
+.reminder-settings__toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.reminder-settings__message {
+  margin: 0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.reminder-event-fieldset {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.reminder-event-fieldset legend {
+  padding: 0 0.25rem;
+  font-size: 0.9375rem;
+}
+
+.reminder-event-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.5rem 0;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.reminder-minutes-input {
+  width: 4rem;
+  padding: 0.25rem 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+/* .event-form input { width: 100% } より詳細度を上げて分入力だけコンパクトに */
+.event-form .reminder-event-fieldset .reminder-minutes-input {
+  display: inline-block;
+  width: 3.5rem;
+  max-width: 5rem;
+  flex: 0 0 auto;
+  margin-top: 0;
+  padding: 0.35rem 0.4rem;
+  font-size: 0.875rem;
+}
+
+.event-form .reminder-event-fieldset .reminder-event-toggle input[type="checkbox"] {
+  display: inline-block;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+}
+
+/* .event-form label { display: block } より詳細度を上げて一行に並べる */
+.event-form .reminder-event-fieldset label.reminder-event-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 .btn-logout {
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;

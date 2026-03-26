@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { fetchTripEvent, updateTripEvent, deleteTripEvent, uploadReceiptImage, deleteReceiptImage } from '../lib/trips'
+import { supabase } from '../lib/supabase'
+import { fetchEventReminderPrefs, upsertEventReminderPrefs } from '../lib/reminderPreferences'
 import { ConcurrentModificationError } from '../lib/errors'
 import { PlaceAutocompleteInput } from '../components/PlaceAutocompleteInput'
 import { TimeInput } from '../components/TimeInput'
@@ -38,6 +40,11 @@ export function EditEventPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [reminderUserId, setReminderUserId] = useState<string | null>(null)
+  const [remindStartEnabled, setRemindStartEnabled] = useState(true)
+  const [remindEndEnabled, setRemindEndEnabled] = useState(true)
+  const [remindStartMins, setRemindStartMins] = useState(5)
+  const [remindEndMins, setRemindEndMins] = useState(5)
 
   useEffect(() => {
     return () => {
@@ -83,6 +90,30 @@ export function EditEventPage() {
       }
     }
     load()
+  }, [eventId])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (cancelled || !user?.id || !eventId) return
+      setReminderUserId(user.id)
+      try {
+        const p = await fetchEventReminderPrefs(supabase, user.id, eventId)
+        if (cancelled) return
+        if (p) {
+          setRemindStartEnabled(p.remind_start_enabled)
+          setRemindEndEnabled(p.remind_end_enabled)
+          setRemindStartMins(p.remind_start_minutes_before)
+          setRemindEndMins(p.remind_end_minutes_before)
+        }
+      } catch {
+        /* リマインダー設定は任意 */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
   }, [eventId])
 
   const handlePlaceSelect = (details: PlaceDetails) => {
@@ -139,6 +170,19 @@ export function EditEventPage() {
         })
         loadedEventUpdatedAtRef.current = delResult.updatedAt
       }
+      if (reminderUserId) {
+        const clampM = (n: number) =>
+          Math.max(0, Math.min(24 * 60, Number.isFinite(n) ? Math.round(n) : 5))
+        await upsertEventReminderPrefs(supabase, {
+          user_id: reminderUserId,
+          trip_event_id: eventId,
+          remind_start_enabled: remindStartEnabled,
+          remind_end_enabled: remindEndEnabled,
+          remind_end_at_enabled: false,
+          remind_start_minutes_before: clampM(remindStartMins),
+          remind_end_minutes_before: clampM(remindEndMins),
+        })
+      }
       navigate(`/trips/${tripId}`, { state: backToTripState })
     } catch (err) {
       if (err instanceof ConcurrentModificationError) {
@@ -187,6 +231,10 @@ export function EditEventPage() {
       </div>
     )
   }
+
+  const hasStartReminderRow = Boolean(startTime.trim())
+  const hasEndReminderRow = Boolean(endTime.trim())
+  const showReminderFieldset = hasStartReminderRow || hasEndReminderRow
 
   return (
     <div className="page">
@@ -260,6 +308,49 @@ export function EditEventPage() {
               <TimeInput value={endTime} onChange={setEndTime} label="終了時刻" />
             </label>
           </div>
+          {showReminderFieldset && (
+            <fieldset className="reminder-event-fieldset">
+              <legend>この予定のリマインダー</legend>
+              {hasStartReminderRow && (
+                <label className="reminder-event-toggle">
+                  <input
+                    type="checkbox"
+                    checked={remindStartEnabled}
+                    onChange={(e) => setRemindStartEnabled(e.target.checked)}
+                  />
+                  <span>開始</span>
+                  <input
+                    type="number"
+                    className="reminder-minutes-input"
+                    min={0}
+                    max={1440}
+                    value={remindStartMins}
+                    onChange={(e) => setRemindStartMins(Number(e.target.value))}
+                  />
+                  <span>分前に通知</span>
+                </label>
+              )}
+              {hasEndReminderRow && (
+                <label className="reminder-event-toggle">
+                  <input
+                    type="checkbox"
+                    checked={remindEndEnabled}
+                    onChange={(e) => setRemindEndEnabled(e.target.checked)}
+                  />
+                  <span>終了</span>
+                  <input
+                    type="number"
+                    className="reminder-minutes-input"
+                    min={0}
+                    max={1440}
+                    value={remindEndMins}
+                    onChange={(e) => setRemindEndMins(Number(e.target.value))}
+                  />
+                  <span>分前に通知</span>
+                </label>
+              )}
+            </fieldset>
+          )}
           <label>
             メモ
             <textarea
