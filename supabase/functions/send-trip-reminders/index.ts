@@ -93,6 +93,27 @@ Deno.serve(async (req) => {
   }
 
   for (const row of candidates) {
+    // Atomically claim this notification slot before sending.
+    // ON CONFLICT DO NOTHING ensures only one concurrent worker proceeds.
+    const { data: claimed, error: claimErr } = await supabase
+      .from('reminder_notifications_sent')
+      .upsert(
+        { user_id: row.user_id, trip_event_id: row.trip_event_id, kind: row.kind },
+        { onConflict: 'user_id,trip_event_id,kind', ignoreDuplicates: true },
+      )
+      .select('user_id')
+
+    if (claimErr) {
+      console.error('[send-trip-reminders] claim', claimErr)
+      failed++
+      continue
+    }
+
+    if (!claimed || claimed.length === 0) {
+      // Already claimed by a concurrent worker — skip silently.
+      continue
+    }
+
     const subs = subsByUser.get(row.user_id) ?? []
 
     if (!subs.length) {
@@ -106,37 +127,31 @@ Deno.serve(async (req) => {
       url: row.url_path,
     })
 
-    let anyOk = false
-    for (const sub of subs) {
-      try {
-        await webPush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.p256dh, auth: sub.auth },
-          },
-          payload,
-          { TTL: 300 },
-        )
-        anyOk = true
-      } catch (e) {
-        console.error('[send-trip-reminders] push', sub.id, e)
-        if (isGoneError(e)) {
-          await supabase.from('push_subscriptions').delete().eq('id', sub.id)
+    const goneIds: string[] = []
+    const pushResults = await Promise.allSettled(
+      subs.map(async (sub) => {
+        try {
+          await webPush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            payload,
+            { TTL: 300 },
+          )
+        } catch (e) {
+          console.error('[send-trip-reminders] push', sub.id, e)
+          if (isGoneError(e)) goneIds.push(sub.id)
+          throw e
         }
-      }
+      }),
+    )
+
+    if (goneIds.length > 0) {
+      await supabase.from('push_subscriptions').delete().in('id', goneIds)
     }
 
+    const anyOk = pushResults.some((r) => r.status === 'fulfilled')
+
     if (anyOk) {
-      const { error: insErr } = await supabase.from('reminder_notifications_sent').insert({
-        user_id: row.user_id,
-        trip_event_id: row.trip_event_id,
-        kind: row.kind,
-      })
-      if (insErr) {
-        console.error('[send-trip-reminders] insert sent', insErr)
-      } else {
-        sent++
-      }
+      sent++
     } else {
       failed++
     }
