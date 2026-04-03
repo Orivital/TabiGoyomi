@@ -1,0 +1,57 @@
+# Supabase Edge Function `send-trip-reminders` を定期起動する。
+# リポジトリの Secrets に REMINDERS_CRON_SECRET（Supabase の CRON_SECRET と同じ値）を設定すること。
+# スケジュールは UTC。遅延やスキップは GitHub の負荷状況で起こり得る。
+
+name: Send trip reminders
+
+on:
+  schedule:
+    - cron: '*/1 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: send-trip-reminders
+  cancel-in-progress: false
+
+jobs:
+  invoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Invoke send-trip-reminders
+        env:
+          REMINDERS_CRON_SECRET: ${{ secrets.REMINDERS_CRON_SECRET }}
+          REMINDERS_FUNCTION_URL: ${{ secrets.REMINDERS_FUNCTION_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${REMINDERS_CRON_SECRET:-}" ]; then
+            echo "::error::Repository secret REMINDERS_CRON_SECRET is not set."
+            exit 1
+          fi
+          URL="${REMINDERS_FUNCTION_URL:-https://ssyeychimkqjhzvwucap.supabase.co/functions/v1/send-trip-reminders}"
+          echo "POST $URL"
+          set +e
+          CODE=$(curl -sS --connect-timeout 10 --max-time 60 \
+            -o body.txt -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${REMINDERS_CRON_SECRET}" \
+            "$URL")
+          CURL_EXIT=$?
+          set -e
+          if [ "$CURL_EXIT" -ne 0 ]; then
+            echo "::error::curl failed (exit ${CURL_EXIT}). Check URL, network, or timeouts."
+            if [ -s body.txt ]; then
+              echo "Response body:"
+              cat body.txt
+              echo
+            fi
+            exit 1
+          fi
+          echo "Response body:"
+          cat body.txt
+          echo
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Expected HTTP 200, got ${CODE}"
+            exit 1
+          fi
